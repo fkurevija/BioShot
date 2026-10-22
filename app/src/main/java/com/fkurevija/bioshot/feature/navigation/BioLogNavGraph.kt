@@ -7,6 +7,7 @@ import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.fkurevija.bioshot.feature.chart.PkChartScreen
@@ -50,6 +51,7 @@ fun BioShotNavGraph(
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
         bottomBar = {
             NavigationBar {
                 navItems.forEach { item ->
@@ -57,7 +59,7 @@ fun BioShotNavGraph(
                         selected = currentScreen == item.route,
                         onClick = { currentScreen = item.route },
                         icon = { Icon(imageVector = item.icon, contentDescription = item.label) },
-                        label = { Text(item.label) }
+                        label = { Text(item.label, maxLines = 1, overflow = TextOverflow.Ellipsis, style = MaterialTheme.typography.labelSmall) }
                     )
                 }
             }
