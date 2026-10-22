@@ -27,6 +27,10 @@ fun DoctorExportAndSettingsScreen(
     medications: List<MedicationEntity>,
     injectionLogs: List<InjectionLogEntity>,
     symptomEntries: List<SymptomEntryEntity>,
+    forceDark: Boolean = false,
+    remindersEnabled: Boolean = false,
+    onForceDarkChanged: (Boolean) -> Unit = {},
+    onRemindersChanged: (Boolean) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -172,7 +176,7 @@ fun DoctorExportAndSettingsScreen(
                                 Text(text = "Notify when next dose is due", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
                         }
-                        Switch(checked = true, onCheckedChange = {})
+                        Switch(checked = remindersEnabled, onCheckedChange = onRemindersChanged)
                     }
 
                     HorizontalDivider()
@@ -192,7 +196,7 @@ fun DoctorExportAndSettingsScreen(
                                 Text(text = "Follow system theme", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
                         }
-                        Switch(checked = true, onCheckedChange = {})
+                        Switch(checked = forceDark, onCheckedChange = onForceDarkChanged)
                     }
 
                     HorizontalDivider()

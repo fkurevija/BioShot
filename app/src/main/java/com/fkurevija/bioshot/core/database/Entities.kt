@@ -29,7 +29,7 @@ data class InjectionLogEntity(
     val lotNumber: String? = null,
     val notes: String? = null,
     val painLevel: Int? = null,
-    val sideEffectsJson: String = "[]" // JSON representation of List<String>
+    val sideEffects: List<String> = emptyList()
 )
 
 @Entity(tableName = "symptom_entries")
@@ -40,5 +40,5 @@ data class SymptomEntryEntity(
     val severity: Int,
     val symptomName: String,
     val notes: String? = null,
-    val tagsJson: String = "[]" // JSON representation of List<String>
+    val tags: List<String> = emptyList()
 )

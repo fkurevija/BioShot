@@ -6,12 +6,17 @@ import androidx.lifecycle.viewModelScope
 import com.fkurevija.bioshot.core.database.BioShotDatabase
 import com.fkurevija.bioshot.core.database.InjectionLogEntity
 import com.fkurevija.bioshot.core.database.MedicationEntity
+import com.fkurevija.bioshot.core.database.InjectionLogDao
+import com.fkurevija.bioshot.core.database.MedicationDao
+import com.fkurevija.bioshot.core.database.SymptomDao
+import com.fkurevija.bioshot.core.database.SettingsRepository
 import com.fkurevija.bioshot.core.database.SymptomEntryEntity
 import com.fkurevija.bioshot.core.model.DeviceType
 import com.fkurevija.bioshot.core.model.InjectionSite
 import com.fkurevija.bioshot.core.model.ScheduleType
 import com.fkurevija.bioshot.core.pk.PkCalculator
 import com.fkurevija.bioshot.core.schedule.ScheduleEngine
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
@@ -20,9 +25,24 @@ import kotlinx.coroutines.launch
 
 class BioShotViewModel(application: Application) : AndroidViewModel(application) {
     private val database = BioShotDatabase.getDatabase(application)
-    private val medicationDao = database.medicationDao()
-    private val injectionLogDao = database.injectionLogDao()
-    private val symptomDao = database.symptomDao()
+    private val medicationDao: MedicationDao = database.medicationDao()
+    private val injectionLogDao: InjectionLogDao = database.injectionLogDao()
+    private val symptomDao: SymptomDao = database.symptomDao()
+
+    private val settingsRepository = SettingsRepository(application)
+
+    val forceDark: StateFlow<Boolean> = settingsRepository.forceDark
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+    val remindersEnabled: StateFlow<Boolean> = settingsRepository.remindersEnabled
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+
+    fun setForceDark(enabled: Boolean) {
+        viewModelScope.launch { settingsRepository.setForceDark(enabled) }
+    }
+
+    fun setRemindersEnabled(enabled: Boolean) {
+        viewModelScope.launch { settingsRepository.setRemindersEnabled(enabled) }
+    }
 
     val medications: StateFlow<List<MedicationEntity>> = medicationDao.getAllMedications()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
@@ -55,13 +75,13 @@ class BioShotViewModel(application: Application) : AndroidViewModel(application)
 
     fun deleteMedication(medication: MedicationEntity) {
         viewModelScope.launch {
+            medicationDao.deleteInjectionLogsForMedication(medication.id)
             medicationDao.deleteMedication(medication)
         }
     }
 
     fun insertInjectionLog(medicationId: Long, site: InjectionSite, dosageGiven: String, lotNumber: String?, notes: String?, painLevel: Int?, sideEffects: List<String>) {
         viewModelScope.launch {
-            val jsonSideEffects = sideEffects.joinToString(separator = ",") // simplified or json
             injectionLogDao.insertInjectionLog(
                 InjectionLogEntity(
                     medicationId = medicationId,
@@ -69,8 +89,8 @@ class BioShotViewModel(application: Application) : AndroidViewModel(application)
                     dosageGiven = dosageGiven,
                     lotNumber = lotNumber,
                     notes = notes,
-                    painLevel = painLevel,
-                    sideEffectsJson = jsonSideEffects
+                    painLevel = painLevel?.coerceIn(0, 10),
+                    sideEffects = sideEffects
                 )
             )
         }
@@ -86,10 +106,10 @@ class BioShotViewModel(application: Application) : AndroidViewModel(application)
         viewModelScope.launch {
             symptomDao.insertSymptomEntry(
                 SymptomEntryEntity(
-                    severity = severity,
+                    severity = severity.coerceIn(1, 10),
                     symptomName = symptomName,
                     notes = notes,
-                    tagsJson = tags.joinToString(separator = ",")
+                    tags = tags
                 )
             )
         }

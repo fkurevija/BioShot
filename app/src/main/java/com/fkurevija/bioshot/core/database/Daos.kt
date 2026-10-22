@@ -22,6 +22,9 @@ interface MedicationDao {
     @Update
     suspend fun updateMedication(medication: MedicationEntity)
 
+    @Query("DELETE FROM injection_logs WHERE medicationId = :medicationId")
+    suspend fun deleteInjectionLogsForMedication(medicationId: Long)
+
     @Delete
     suspend fun deleteMedication(medication: MedicationEntity)
 }

@@ -5,9 +5,12 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import com.fkurevija.bioshot.feature.navigation.BioShotNavGraph
 import com.fkurevija.bioshot.feature.viewmodel.BioShotViewModel
@@ -20,7 +23,9 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            BioShotTheme {
+            val forceDark by viewModel.forceDark.collectAsState()
+            val systemDark = isSystemInDarkTheme()
+            BioShotTheme(darkTheme = forceDark || systemDark) {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
                     BioShotNavGraph(
                         viewModel = viewModel,

@@ -4,6 +4,8 @@ import androidx.room.TypeConverter
 import com.fkurevija.bioshot.core.model.DeviceType
 import com.fkurevija.bioshot.core.model.InjectionSite
 import com.fkurevija.bioshot.core.model.ScheduleType
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 
 class Converters {
     @TypeConverter
@@ -23,4 +25,14 @@ class Converters {
 
     @TypeConverter
     fun toScheduleType(value: String): ScheduleType = ScheduleType.valueOf(value)
+
+    /**
+     * Single converter pair shared by any `List<String>` Room field (injection_logs.side_effects
+     * and symptom_entries.tags). Room matches converters by input/output type pair.
+     */
+    @TypeConverter
+    fun fromSideEffects(list: List<String>): String = Json.encodeToString(list)
+
+    @TypeConverter
+    fun toSideEffects(json: String): List<String> = Json.decodeFromString(json)
 }

@@ -124,7 +124,11 @@ fun BioShotNavGraph(
                     DoctorExportAndSettingsScreen(
                         medications = medications,
                         injectionLogs = injectionLogs,
-                        symptomEntries = symptomEntries
+                        symptomEntries = symptomEntries,
+                        forceDark = viewModel.forceDark.collectAsStateWithLifecycle().value,
+                        remindersEnabled = viewModel.remindersEnabled.collectAsStateWithLifecycle().value,
+                        onForceDarkChanged = { viewModel.setForceDark(it) },
+                        onRemindersChanged = { viewModel.setRemindersEnabled(it) }
                     )
                 }
             }
