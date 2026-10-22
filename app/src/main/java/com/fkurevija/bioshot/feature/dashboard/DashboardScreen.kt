@@ -61,7 +61,7 @@ fun DashboardScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(scrollState)
-                .padding(24.dp),
+                .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
             // Header / Greeting
@@ -101,7 +101,7 @@ fun DashboardScreen(
             ) {
                 Column(
                     modifier = Modifier
-                        .padding(24.dp)
+                        .padding(16.dp)
                         .fillMaxWidth(),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
@@ -199,7 +199,7 @@ fun DashboardScreen(
             ) {
                 Column(
                     modifier = Modifier
-                        .padding(20.dp)
+                        .padding(16.dp)
                         .fillMaxWidth(),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {

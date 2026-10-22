@@ -86,7 +86,7 @@ fun PkChartScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
                 .verticalScroll(rememberScrollState())
-                .padding(20.dp),
+                .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
             // Mandatory Disclaimer Card
@@ -141,7 +141,7 @@ fun PkChartScreen(
             ) {
                 Column(
                     modifier = Modifier
-                        .padding(20.dp)
+                        .padding(16.dp)
                         .fillMaxWidth(),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {

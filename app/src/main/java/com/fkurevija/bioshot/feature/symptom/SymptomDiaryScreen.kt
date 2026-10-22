@@ -53,7 +53,7 @@ fun SymptomDiaryScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
                 .verticalScroll(rememberScrollState())
-                .padding(20.dp),
+                .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
             Text(
@@ -73,7 +73,7 @@ fun SymptomDiaryScreen(
             ) {
                 Column(
                     modifier = Modifier
-                        .padding(20.dp)
+                        .padding(16.dp)
                         .fillMaxWidth(),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
