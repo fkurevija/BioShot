@@ -48,11 +48,11 @@ abstract class BioShotDatabase : RoomDatabase() {
                 // Introduce the new typed list columns first, then backfill from the legacy
                 // comma-separated CSV columns. The legacy columns are left in place (harmless
                 // extra columns) because DROP COLUMN is not supported on older SQLite versions.
-                database.execSQL("ALTER TABLE injection_logs ADD COLUMN side_effects TEXT NOT NULL DEFAULT '[]'")
+                database.execSQL("ALTER TABLE injection_logs ADD COLUMN sideEffects TEXT NOT NULL DEFAULT '[]'")
                 database.execSQL("ALTER TABLE symptom_entries ADD COLUMN tags TEXT NOT NULL DEFAULT '[]'")
 
-                convertLegacyColumn(database, "injection_logs", "side_effects_json", "side_effects")
-                convertLegacyColumn(database, "symptom_entries", "tags_json", "tags")
+                convertLegacyColumn(database, "injection_logs", "sideEffectsJson", "sideEffects")
+                convertLegacyColumn(database, "symptom_entries", "tagsJson", "tags")
             }
         }
 
