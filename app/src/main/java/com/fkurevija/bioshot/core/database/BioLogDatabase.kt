@@ -46,15 +46,13 @@ abstract class BioShotDatabase : RoomDatabase() {
         private val migration1To2 = object : Migration(1, 2) {
             override fun migrate(database: SupportSQLiteDatabase) {
                 // Introduce the new typed list columns first, then backfill from the legacy
-                // comma-separated CSV columns, then drop the legacy columns.
-                database.execSQL("ALTER TABLE injection_logs ADD COLUMN side_effects TEXT")
-                database.execSQL("ALTER TABLE symptom_entries ADD COLUMN tags TEXT")
+                // comma-separated CSV columns. The legacy columns are left in place (harmless
+                // extra columns) because DROP COLUMN is not supported on older SQLite versions.
+                database.execSQL("ALTER TABLE injection_logs ADD COLUMN side_effects TEXT NOT NULL DEFAULT '[]'")
+                database.execSQL("ALTER TABLE symptom_entries ADD COLUMN tags TEXT NOT NULL DEFAULT '[]'")
 
                 convertLegacyColumn(database, "injection_logs", "side_effects_json", "side_effects")
                 convertLegacyColumn(database, "symptom_entries", "tags_json", "tags")
-
-                database.execSQL("ALTER TABLE injection_logs DROP COLUMN side_effects_json")
-                database.execSQL("ALTER TABLE symptom_entries DROP COLUMN tags_json")
             }
         }
 
