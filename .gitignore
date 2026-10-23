@@ -14,3 +14,4 @@
 .cxx
 local.properties
 *.txt
+.agent/plan.md
