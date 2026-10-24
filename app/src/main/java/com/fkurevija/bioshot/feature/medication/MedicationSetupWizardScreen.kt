@@ -3,13 +3,16 @@ package com.fkurevija.bioshot.feature.medication
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.fkurevija.bioshot.core.model.DeviceType
@@ -17,32 +20,73 @@ import com.fkurevija.bioshot.core.model.ScheduleType
 import com.fkurevija.bioshot.ui.theme.BioShotTheme
 
 /** Bundled biologic presets shown as quick-select chips. */
-private data class BiologicPreset(val name: String, val defaultDosage: String)
+private data class BiologicPreset(val name: String, val defaultDosage: String, val scheduleType: ScheduleType, val defaultDays: Int)
 
 private val BIOLOGIC_PRESETS = listOf(
-    BiologicPreset("Humira (Adalimumab)", "40mg"),
-    BiologicPreset("Enbrel (Etanercept)", "50mg"),
-    BiologicPreset("Stelara (Ustekinumab)", "45mg"),
-    BiologicPreset("Cosentyx (Secukinumab)", "300mg"),
-    BiologicPreset("Dupixent (Dupilumab)", "300mg"),
-    BiologicPreset("Simponi (Golimumab)", "50mg"),
+    BiologicPreset("Humira (Adalimumab)", "40mg", ScheduleType.BIWEEKLY, 14),
+    BiologicPreset("Enbrel (Etanercept)", "50mg", ScheduleType.WEEKLY, 7),
+    BiologicPreset("Stelara (Ustekinumab)", "45mg", ScheduleType.CUSTOM, 84), // Every 12 weeks
+    BiologicPreset("Cosentyx (Secukinumab)", "300mg", ScheduleType.WEEKLY, 7),
+    BiologicPreset("Dupixent (Dupilumab)", "300mg", ScheduleType.BIWEEKLY, 14),
+    BiologicPreset("Simponi (Golimumab)", "50mg", ScheduleType.CUSTOM, 28), // Every 4 weeks
 )
+
+private enum class FrequencyPreset(val label: String, val scheduleType: ScheduleType, val defaultDays: Int) {
+    DAILY("Daily", ScheduleType.DAILY, 1),
+    WEEKLY("Weekly (Every 7 days)", ScheduleType.WEEKLY, 7),
+    BIWEEKLY("Every 2 Weeks (Biweekly)", ScheduleType.BIWEEKLY, 14),
+    MONTHLY("Monthly", ScheduleType.MONTHLY, 30),
+    AS_NEEDED("As Needed / Manual", ScheduleType.AS_NEEDED, 0),
+    CUSTOM("Custom...", ScheduleType.CUSTOM, 28)
+}
+
+private enum class CustomUnit(val label: String, val daysMultiplier: Int) {
+    DAYS("Days", 1),
+    WEEKS("Weeks", 7),
+    MONTHS("Months", 30)
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MedicationSetupWizardScreen(
-    onSaveMedication: (String, String, ScheduleType, DeviceType, String?) -> Unit,
+    onSaveMedication: (String, String, ScheduleType, Int, DeviceType, String?) -> Unit,
     onNavigateBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     var name by remember { mutableStateOf("") }
     var dosage by remember { mutableStateOf("") }
-    var frequency by remember { mutableStateOf(ScheduleType.BIWEEKLY) }
+    var selectedPreset by remember { mutableStateOf(FrequencyPreset.BIWEEKLY) }
+    var customNumberText by remember { mutableStateOf("4") }
+    var customUnit by remember { mutableStateOf(CustomUnit.WEEKS) }
     var deviceType by remember { mutableStateOf(DeviceType.PEN) }
     var notes by remember { mutableStateOf("") }
 
     var freqExpanded by remember { mutableStateOf(false) }
+    var unitExpanded by remember { mutableStateOf(false) }
     var deviceExpanded by remember { mutableStateOf(false) }
+
+    val isFormValid = name.isNotBlank() && dosage.isNotBlank()
+
+    val finalScheduleType = selectedPreset.scheduleType
+    val finalIntervalDays = if (finalScheduleType == ScheduleType.CUSTOM) {
+        val num = customNumberText.toIntOrNull()?.coerceAtLeast(1) ?: 1
+        num * customUnit.daysMultiplier
+    } else {
+        selectedPreset.defaultDays
+    }
+
+    val saveAction = {
+        if (isFormValid) {
+            onSaveMedication(
+                name.trim(),
+                dosage.trim(),
+                finalScheduleType,
+                finalIntervalDays,
+                deviceType,
+                notes.ifBlank { null }
+            )
+        }
+    }
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
@@ -54,11 +98,47 @@ fun MedicationSetupWizardScreen(
                         Icon(imageVector = Icons.Rounded.ArrowBack, contentDescription = "Back")
                     }
                 },
+                actions = {
+                    TextButton(
+                        onClick = saveAction,
+                        enabled = isFormValid
+                    ) {
+                        Icon(imageVector = Icons.Rounded.Check, contentDescription = null)
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Save")
+                    }
+                },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.surfaceVariant,
                     titleContentColor = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             )
+        },
+        bottomBar = {
+            Surface(
+                tonalElevation = 8.dp,
+                color = MaterialTheme.colorScheme.surfaceContainer
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp)
+                ) {
+                    Button(
+                        onClick = saveAction,
+                        modifier = Modifier.fillMaxWidth(),
+                        enabled = isFormValid,
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary,
+                            contentColor = MaterialTheme.colorScheme.onPrimary
+                        )
+                    ) {
+                        Icon(imageVector = Icons.Rounded.Save, contentDescription = null)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Save Medication", style = MaterialTheme.typography.titleMedium)
+                    }
+                }
+            }
         }
     ) { innerPadding ->
         val scrollState = rememberScrollState()
@@ -67,7 +147,8 @@ fun MedicationSetupWizardScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
                 .verticalScroll(scrollState)
-                .padding(16.dp),
+                .padding(16.dp)
+                .padding(bottom = 32.dp),
             verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
             Text(
@@ -101,6 +182,26 @@ fun MedicationSetupWizardScreen(
                         onClick = {
                             name = preset.name
                             if (dosage.isBlank()) dosage = preset.defaultDosage
+                            when (preset.scheduleType) {
+                                ScheduleType.DAILY -> selectedPreset = FrequencyPreset.DAILY
+                                ScheduleType.WEEKLY -> selectedPreset = FrequencyPreset.WEEKLY
+                                ScheduleType.BIWEEKLY -> selectedPreset = FrequencyPreset.BIWEEKLY
+                                ScheduleType.MONTHLY -> selectedPreset = FrequencyPreset.MONTHLY
+                                ScheduleType.AS_NEEDED -> selectedPreset = FrequencyPreset.AS_NEEDED
+                                ScheduleType.CUSTOM -> {
+                                    selectedPreset = FrequencyPreset.CUSTOM
+                                    if (preset.defaultDays % 30 == 0) {
+                                        customNumberText = (preset.defaultDays / 30).toString()
+                                        customUnit = CustomUnit.MONTHS
+                                    } else if (preset.defaultDays % 7 == 0) {
+                                        customNumberText = (preset.defaultDays / 7).toString()
+                                        customUnit = CustomUnit.WEEKS
+                                    } else {
+                                        customNumberText = preset.defaultDays.toString()
+                                        customUnit = CustomUnit.DAYS
+                                    }
+                                }
+                            }
                         },
                         label = { Text(preset.name) }
                     )
@@ -110,7 +211,7 @@ fun MedicationSetupWizardScreen(
             OutlinedTextField(
                 value = name,
                 onValueChange = { name = it },
-                label = { Text("Medication Name") },
+                label = { Text("Medication Name *") },
                 placeholder = { Text("e.g. Humira, Simponi (Golimumab)") },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
@@ -120,22 +221,22 @@ fun MedicationSetupWizardScreen(
             OutlinedTextField(
                 value = dosage,
                 onValueChange = { dosage = it },
-                label = { Text("Dosage (e.g. 40mg / 1ml)") },
+                label = { Text("Dosage * (e.g. 40mg / 1ml)") },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
                 leadingIcon = { Icon(imageVector = Icons.Rounded.Science, contentDescription = null) }
             )
 
-            // Frequency Dropdown
+            // Frequency Preset Dropdown
             ExposedDropdownMenuBox(
                 expanded = freqExpanded,
                 onExpandedChange = { freqExpanded = !freqExpanded }
             ) {
                 OutlinedTextField(
-                    value = frequency.name.replace("_", " "),
+                    value = selectedPreset.label,
                     onValueChange = {},
                     readOnly = true,
-                    label = { Text("Frequency Schedule") },
+                    label = { Text("Frequency Schedule *") },
                     trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = freqExpanded) },
                     modifier = Modifier
                         .menuAnchor()
@@ -145,14 +246,108 @@ fun MedicationSetupWizardScreen(
                     expanded = freqExpanded,
                     onDismissRequest = { freqExpanded = false }
                 ) {
-                    ScheduleType.entries.forEach { type ->
+                    FrequencyPreset.entries.forEach { preset ->
                         DropdownMenuItem(
-                            text = { Text(type.name.replace("_", " ")) },
+                            text = { Text(preset.label) },
                             onClick = {
-                                frequency = type
+                                selectedPreset = preset
                                 freqExpanded = false
                             }
                         )
+                    }
+                }
+            }
+
+            // Custom Interval Inputs (Only shown if Custom preset is selected)
+            if (selectedPreset == FrequencyPreset.CUSTOM) {
+                Card(
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .padding(16.dp)
+                            .fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Text(
+                            text = "Custom Schedule Configuration",
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            OutlinedTextField(
+                                value = customNumberText,
+                                onValueChange = { customNumberText = it },
+                                label = { Text("Every...") },
+                                placeholder = { Text("4") },
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                modifier = Modifier.weight(1f),
+                                singleLine = true
+                            )
+
+                            // Unit Dropdown (Days, Weeks, Months)
+                            ExposedDropdownMenuBox(
+                                expanded = unitExpanded,
+                                onExpandedChange = { unitExpanded = !unitExpanded },
+                                modifier = Modifier.weight(1.2f)
+                            ) {
+                                OutlinedTextField(
+                                    value = customUnit.label,
+                                    onValueChange = {},
+                                    readOnly = true,
+                                    label = { Text("Unit") },
+                                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = unitExpanded) },
+                                    modifier = Modifier
+                                        .menuAnchor()
+                                        .fillMaxWidth(),
+                                    singleLine = true
+                                )
+                                ExposedDropdownMenu(
+                                    expanded = unitExpanded,
+                                    onDismissRequest = { unitExpanded = false }
+                                ) {
+                                    CustomUnit.entries.forEach { unit ->
+                                        DropdownMenuItem(
+                                            text = { Text(unit.label) },
+                                            onClick = {
+                                                customUnit = unit
+                                                unitExpanded = false
+                                            }
+                                        )
+                                    }
+                                }
+                            }
+                        }
+
+                        val num = customNumberText.toIntOrNull() ?: 0
+                        if (num > 0) {
+                            val hintMessage = when (customUnit) {
+                                CustomUnit.DAYS -> "Schedule: Every $num ${if (num == 1) "day" else "days"}"
+                                CustomUnit.WEEKS -> {
+                                    val totalDays = num * 7
+                                    "Schedule: Every $num ${if (num == 1) "week" else "weeks"} ($totalDays days between doses)"
+                                }
+                                CustomUnit.MONTHS -> {
+                                    val totalDays = num * 30
+                                    val approxWeeks = totalDays / 7.0
+                                    "Schedule: Every $num ${if (num == 1) "month" else "months"} (~${String.format("%.1f", approxWeeks)} weeks / $totalDays days between doses)"
+                                }
+                            }
+                            Text(
+                                text = hintMessage,
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
                     }
                 }
             }
@@ -192,29 +387,10 @@ fun MedicationSetupWizardScreen(
                 value = notes,
                 onValueChange = { notes = it },
                 label = { Text("Optional Notes / Instructions") },
+                placeholder = { Text("e.g. Take with food, inject in abdomen") },
                 modifier = Modifier.fillMaxWidth(),
                 maxLines = 3
             )
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            Button(
-                onClick = {
-                    if (name.isNotBlank() && dosage.isNotBlank()) {
-                        onSaveMedication(name, dosage, frequency, deviceType, notes.ifBlank { null })
-                    }
-                },
-                modifier = Modifier.fillMaxWidth(),
-                enabled = name.isNotBlank() && dosage.isNotBlank(),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    contentColor = MaterialTheme.colorScheme.onPrimary
-                )
-            ) {
-                Icon(imageVector = Icons.Rounded.Save, contentDescription = null)
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("Save Medication")
-            }
         }
     }
 }
@@ -224,7 +400,7 @@ fun MedicationSetupWizardScreen(
 fun MedicationSetupWizardScreenPreview() {
     BioShotTheme {
         MedicationSetupWizardScreen(
-            onSaveMedication = { _, _, _, _, _ -> },
+            onSaveMedication = { _, _, _, _, _, _ -> },
             onNavigateBack = {}
         )
     }

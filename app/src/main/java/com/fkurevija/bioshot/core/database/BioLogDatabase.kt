@@ -17,7 +17,7 @@ import java.io.File
         InjectionLogEntity::class,
         SymptomEntryEntity::class
     ],
-    version = 2,
+    version = 3,
     exportSchema = true
 )
 @TypeConverters(Converters::class)
@@ -43,7 +43,7 @@ abstract class BioShotDatabase : RoomDatabase() {
             // Pre-migration backup: if an older database exists, export all data before
             // Room runs migrations. Backup failures are non-fatal; migration proceeds regardless.
             val currentVersion = getExistingDatabaseVersion(context)
-            if (currentVersion > 0 && currentVersion < 2) {
+            if (currentVersion > 0 && currentVersion < 3) {
                 try {
                     DatabaseBackupManager.backupBeforeMigration(context, currentVersion)
                 } catch (_: Exception) {
@@ -56,7 +56,7 @@ abstract class BioShotDatabase : RoomDatabase() {
                 BioShotDatabase::class.java,
                 "bioshot_database"
             )
-                .addMigrations(migration1To2)
+                .addMigrations(migration1To2, migration2To3)
 
             return try {
                 builder.build()
@@ -103,6 +103,12 @@ abstract class BioShotDatabase : RoomDatabase() {
 
                 convertLegacyColumn(database, "injection_logs", "sideEffectsJson", "sideEffects")
                 convertLegacyColumn(database, "symptom_entries", "tagsJson", "tags")
+            }
+        }
+
+        private val migration2To3 = object : Migration(2, 3) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.execSQL("ALTER TABLE medications ADD COLUMN customIntervalDays INTEGER NOT NULL DEFAULT 14")
             }
         }
 

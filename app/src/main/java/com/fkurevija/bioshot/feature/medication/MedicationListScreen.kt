@@ -23,6 +23,7 @@ fun MedicationListScreen(
     medications: List<MedicationEntity>,
     onAddMedicationClick: () -> Unit,
     onDeleteMedication: (MedicationEntity) -> Unit,
+    onNavigateToSettings: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Scaffold(
@@ -33,7 +34,12 @@ fun MedicationListScreen(
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.surfaceVariant,
                     titleContentColor = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                ),
+                actions = {
+                    IconButton(onClick = onNavigateToSettings) {
+                        Icon(imageVector = Icons.Rounded.Settings, contentDescription = "Settings")
+                    }
+                }
             )
         },
         floatingActionButton = {
@@ -190,7 +196,8 @@ fun MedicationListScreenPreview() {
                 )
             ),
             onAddMedicationClick = {},
-            onDeleteMedication = {}
+            onDeleteMedication = {},
+            onNavigateToSettings = {}
         )
     }
 }

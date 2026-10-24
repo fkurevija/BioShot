@@ -34,6 +34,7 @@ fun SymptomDiaryScreen(
     medications: List<MedicationEntity>,
     onSaveSymptomEntry: (Int, String, String?, List<String>) -> Unit,
     onDeleteSymptomEntry: (SymptomEntryEntity) -> Unit,
+    onNavigateToSettings: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     var symptomName by remember { mutableStateOf("") }
@@ -53,7 +54,12 @@ fun SymptomDiaryScreen(
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.surfaceVariant,
                     titleContentColor = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                ),
+                actions = {
+                    IconButton(onClick = onNavigateToSettings) {
+                        Icon(imageVector = Icons.Rounded.Settings, contentDescription = "Settings")
+                    }
+                }
             )
         }
     ) { innerPadding ->

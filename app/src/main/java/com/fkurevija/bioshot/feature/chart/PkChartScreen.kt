@@ -7,6 +7,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material.icons.rounded.Warning
+import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -31,6 +32,7 @@ import com.fkurevija.bioshot.ui.theme.BioShotTheme
 fun PkChartScreen(
     medications: List<MedicationEntity>,
     injectionLogs: List<InjectionLogEntity>,
+    onNavigateToSettings: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val latestMed = medications.firstOrNull()
@@ -77,7 +79,12 @@ fun PkChartScreen(
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.surfaceVariant,
                     titleContentColor = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                ),
+                actions = {
+                    IconButton(onClick = onNavigateToSettings) {
+                        Icon(imageVector = Icons.Rounded.Settings, contentDescription = "Settings")
+                    }
+                }
             )
         }
     ) { innerPadding ->
@@ -304,7 +311,8 @@ fun PkChartScreenPreview() {
                     site = InjectionSite.ABDOMEN_LEFT,
                     dosageGiven = "40mg"
                 )
-            )
+            ),
+            onNavigateToSettings = {}
         )
     }
 }

@@ -102,13 +102,14 @@ class BioShotViewModel(application: Application) : AndroidViewModel(application)
         ?.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
         ?: MutableStateFlow(emptyList())
 
-    fun insertMedication(name: String, dosage: String, frequency: ScheduleType, deviceType: DeviceType, notes: String?) {
+    fun insertMedication(name: String, dosage: String, frequency: ScheduleType, customIntervalDays: Int, deviceType: DeviceType, notes: String?) {
         viewModelScope.launch {
             medicationDao?.insertMedication(
                 MedicationEntity(
                     name = name,
                     dosage = dosage,
                     frequency = frequency,
+                    customIntervalDays = customIntervalDays,
                     deviceType = deviceType,
                     notes = notes
                 )

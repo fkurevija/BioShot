@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material.icons.rounded.Medication
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -33,6 +34,7 @@ fun DashboardScreen(
     onQuickLogClick: () -> Unit,
     onNavigateToMedications: () -> Unit,
     onNavigateToLog: () -> Unit,
+    onNavigateToSettings: () -> Unit,
     modifier: Modifier = Modifier,
     innerPadding: PaddingValues = PaddingValues(0.dp)
 ) {
@@ -70,32 +72,37 @@ fun DashboardScreen(
                 .padding(bottom = 80.dp),
             verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
-            // Header / Greeting
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column {
-                    Text(
-                        text = "BioShot Dashboard",
-                        style = MaterialTheme.typography.headlineMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onBackground
-                    )
-                    Text(
-                        text = "Track your biologic therapy & wellness",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "BioShot Dashboard",
+                            style = MaterialTheme.typography.headlineMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onBackground
+                        )
+                        Text(
+                            text = "Track your biologic therapy & wellness",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    FilledTonalIconButton(onClick = onNavigateToMedications) {
+                        Icon(
+                            imageVector = Icons.Rounded.Medication,
+                            contentDescription = "Manage Medications"
+                        )
+                    }
+                    FilledTonalIconButton(onClick = onNavigateToSettings) {
+                        Icon(
+                            imageVector = Icons.Rounded.Settings,
+                            contentDescription = "Settings"
+                        )
+                    }
                 }
-                FilledTonalIconButton(onClick = onNavigateToMedications) {
-                    Icon(
-                        imageVector = Icons.Rounded.Medication,
-                        contentDescription = "Manage Medications"
-                    )
-                }
-            }
 
             // Next Dose Countdown Card
             NextDoseCountdownCard(
@@ -140,7 +147,8 @@ fun DashboardScreenPreview() {
             ),
             onQuickLogClick = {},
             onNavigateToMedications = {},
-            onNavigateToLog = {}
+            onNavigateToLog = {},
+            onNavigateToSettings = {}
         )
     }
 }

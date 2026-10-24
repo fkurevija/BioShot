@@ -5,6 +5,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -30,6 +32,7 @@ fun InjectionLogScreen(
     injectionLogs: List<InjectionLogEntity>,
     onSaveInjectionLog: (Long, InjectionSite, String, String?, String?, Int?, List<String>) -> Unit,
     onDeleteInjectionLog: (InjectionLogEntity) -> Unit,
+    onNavigateToSettings: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     var selectedSite by remember { mutableStateOf(InjectionSite.ABDOMEN_LEFT) }
@@ -55,7 +58,12 @@ fun InjectionLogScreen(
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.surfaceVariant,
                     titleContentColor = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                ),
+                actions = {
+                    IconButton(onClick = onNavigateToSettings) {
+                        Icon(imageVector = Icons.Rounded.Settings, contentDescription = "Settings")
+                    }
+                }
             )
         }
     ) { innerPadding ->
@@ -209,7 +217,8 @@ fun InjectionLogScreenPreview() {
                 )
             ),
             onSaveInjectionLog = { _, _, _, _, _, _, _ -> },
-            onDeleteInjectionLog = {}
+            onDeleteInjectionLog = {},
+            onNavigateToSettings = {}
         )
     }
 }

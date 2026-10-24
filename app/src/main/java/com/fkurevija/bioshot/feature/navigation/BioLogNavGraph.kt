@@ -28,9 +28,7 @@ sealed class NavigationItem(val route: Screen, val label: String, val icon: Imag
     data object Medications : NavigationItem(Screen.MedicationList, "Medications", Icons.Rounded.Medication)
     data object InjectionLog : NavigationItem(Screen.InjectionLog, "Body Map", Icons.Rounded.LocationOn)
     data object SymptomDiary : NavigationItem(Screen.SymptomDiary, "Symptoms", Icons.Rounded.Healing)
-    data object PkChart : NavigationItem(Screen.PkChart, "PK Curve", Icons.AutoMirrored.Rounded.ShowChart)
-    data object Settings : NavigationItem(Screen.DoctorExportAndSettings, "Export & Settings", Icons.Rounded.Settings)
-}
+    data object PkChart : NavigationItem(Screen.PkChart, "PK Curve", Icons.AutoMirrored.Rounded.ShowChart)}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -43,18 +41,21 @@ fun BioShotNavGraph(
 ) {
     var currentScreen by remember { mutableStateOf<Screen>(Screen.Dashboard) }
 
-    // Use passed parameters or fall back to viewModel state
-    val effectiveMedications = if (medications.isNotEmpty()) medications else viewModel.medications.value
-    val effectiveInjectionLogs = if (injectionLogs.isNotEmpty()) injectionLogs else viewModel.injectionLogs.value
-    val effectiveSymptomEntries = if (symptomEntries.isNotEmpty()) symptomEntries else viewModel.symptomEntries.value
+    // Collect state with lifecycle so Room database changes persist and update UI instantly
+    val viewModelMedications = viewModel.medications.collectAsStateWithLifecycle().value
+    val viewModelLogs = viewModel.injectionLogs.collectAsStateWithLifecycle().value
+    val viewModelSymptoms = viewModel.symptomEntries.collectAsStateWithLifecycle().value
+
+    val effectiveMedications = if (medications.isNotEmpty()) medications else viewModelMedications
+    val effectiveInjectionLogs = if (injectionLogs.isNotEmpty()) injectionLogs else viewModelLogs
+    val effectiveSymptomEntries = if (symptomEntries.isNotEmpty()) symptomEntries else viewModelSymptoms
 
     val navItems = listOf(
         NavigationItem.Dashboard,
         NavigationItem.Medications,
         NavigationItem.InjectionLog,
         NavigationItem.SymptomDiary,
-        NavigationItem.PkChart,
-        NavigationItem.Settings
+        NavigationItem.PkChart
     )
 
     Scaffold(
@@ -87,6 +88,7 @@ fun BioShotNavGraph(
                         onQuickLogClick = { currentScreen = Screen.InjectionLog },
                         onNavigateToMedications = { currentScreen = Screen.MedicationList },
                         onNavigateToLog = { currentScreen = Screen.InjectionLog },
+                        onNavigateToSettings = { currentScreen = Screen.DoctorExportAndSettings },
                         innerPadding = PaddingValues(top = 0.dp)
                     )
                 }
@@ -94,13 +96,14 @@ fun BioShotNavGraph(
                     MedicationListScreen(
                         medications = effectiveMedications,
                         onAddMedicationClick = { currentScreen = Screen.MedicationSetupWizard },
-                        onDeleteMedication = { viewModel.deleteMedication(it) }
+                        onDeleteMedication = { viewModel.deleteMedication(it) },
+                        onNavigateToSettings = { currentScreen = Screen.DoctorExportAndSettings }
                     )
                 }
                 is Screen.MedicationSetupWizard -> {
                     MedicationSetupWizardScreen(
-                        onSaveMedication = { name, dosage, freq, device, notes ->
-                            viewModel.insertMedication(name, dosage, freq, device, notes)
+                        onSaveMedication = { name, dosage, freq, customDays, device, notes ->
+                            viewModel.insertMedication(name, dosage, freq, customDays, device, notes)
                             currentScreen = Screen.MedicationList
                         },
                         onNavigateBack = { currentScreen = Screen.MedicationList }
@@ -113,7 +116,8 @@ fun BioShotNavGraph(
                         onSaveInjectionLog = { medId, site, dosage, lot, notes, pain, sideEffects ->
                             viewModel.insertInjectionLog(medId, site, dosage, lot, notes, pain, sideEffects)
                         },
-                        onDeleteInjectionLog = { viewModel.deleteInjectionLog(it) }
+                        onDeleteInjectionLog = { viewModel.deleteInjectionLog(it) },
+                        onNavigateToSettings = { currentScreen = Screen.DoctorExportAndSettings }
                     )
                 }
                 is Screen.SymptomDiary -> {
@@ -126,13 +130,15 @@ fun BioShotNavGraph(
                         },
                         onDeleteSymptomEntry = { entry ->
                             viewModel.deleteSymptomEntry(entry)
-                        }
+                        },
+                        onNavigateToSettings = { currentScreen = Screen.DoctorExportAndSettings }
                     )
                 }
                 is Screen.PkChart -> {
                     PkChartScreen(
                         medications = effectiveMedications,
-                        injectionLogs = effectiveInjectionLogs
+                        injectionLogs = effectiveInjectionLogs,
+                        onNavigateToSettings = { currentScreen = Screen.DoctorExportAndSettings }
                     )
                 }
                 is Screen.DoctorExportAndSettings -> {

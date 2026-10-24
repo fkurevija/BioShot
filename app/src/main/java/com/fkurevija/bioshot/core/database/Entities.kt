@@ -13,6 +13,7 @@ data class MedicationEntity(
     val name: String,
     val dosage: String,
     val frequency: ScheduleType,
+    val customIntervalDays: Int = 14,
     val deviceType: DeviceType,
     val notes: String? = null,
     val createdAt: Long = System.currentTimeMillis()
