@@ -1,36 +1,27 @@
 package com.fkurevija.bioshot.feature.log
 
-import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.rounded.ArrowBack
-import androidx.compose.material.icons.rounded.*
+import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.fkurevija.bioshot.core.database.InjectionLogEntity
 import com.fkurevija.bioshot.core.database.MedicationEntity
-import com.fkurevija.bioshot.core.model.DeviceType
 import com.fkurevija.bioshot.core.model.InjectionSite
 import com.fkurevija.bioshot.core.model.ScheduleType
+import com.fkurevija.bioshot.core.model.DeviceType
+import com.fkurevija.bioshot.feature.log.components.InjectionLogBodyMap
+import com.fkurevija.bioshot.feature.log.components.InjectionLogInjectionForm
+import com.fkurevija.bioshot.feature.log.components.InjectionLogItemCard
 import com.fkurevija.bioshot.ui.theme.BioShotTheme
-import java.text.SimpleDateFormat
-import java.util.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -101,119 +92,14 @@ fun InjectionLogScreen(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    Text(
-                        text = "Interactive Body Map",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
+                    InjectionLogBodyMap(
+                        selectedSite = selectedSite,
+                        onSiteSelected = { selectedSite = it }
                     )
-
-                    // Visual Body Map Selector Grid
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(200.dp)
-                            .background(
-                                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-                                shape = MaterialTheme.shapes.medium
-                            ),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedBy(12.dp)
-                        ) {
-                            Text(
-                                text = "Current Selected: ${selectedSite.name.replace("_", " ")}",
-                                style = MaterialTheme.typography.titleSmall,
-                                fontWeight = FontWeight.SemiBold,
-                                color = MaterialTheme.colorScheme.primary
-                            )
-
-                            // Site selector chips in rows
-                            val sites = InjectionSite.entries
-                            val rows = sites.chunked(2)
-                            rows.forEach { rowSites ->
-                                Row(
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                                ) {
-                                    rowSites.forEach { site ->
-                                        val isSelected = site == selectedSite
-                                        // Check recency from logs
-                                        val lastUsedLog = injectionLogs.find { it.site == site }
-                                        val recentBadge = lastUsedLog != null
-
-                                        FilterChip(
-                                            selected = isSelected,
-                                            onClick = { selectedSite = site },
-                                            label = { Text(site.name.replace("_", " ")) },
-                                            leadingIcon = {
-                                                if (recentBadge) {
-                                                    Icon(
-                                                        imageVector = Icons.Rounded.History,
-                                                        contentDescription = "Recently Used",
-                                                        modifier = Modifier.size(16.dp)
-                                                    )
-                                                }
-                                            }
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    // Rotation Hint
-                    val lastLogForSite = injectionLogs.find { it.site == selectedSite }
-                    if (lastLogForSite != null) {
-                        val daysAgo = (System.currentTimeMillis() - lastLogForSite.timestamp) / (1000 * 60 * 60 * 24)
-                        Surface(
-                            color = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.5f),
-                            shape = MaterialTheme.shapes.small
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(12.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Rounded.Warning,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.error
-                                )
-                                Text(
-                                    text = "Warning: This site was used $daysAgo days ago. Ensure adequate rotation spacing.",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onErrorContainer
-                                )
-                            }
-                        }
-                    } else {
-                        Surface(
-                            color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
-                            shape = MaterialTheme.shapes.small
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(12.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Rounded.CheckCircle,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.primary
-                                )
-                                Text(
-                                    text = "Great choice! No recent injections recorded in this site.",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onPrimaryContainer
-                                )
-                            }
-                        }
-                    }
                 }
             }
 
-            // New Injection Form Card
+            // Injection Form Card
             Card(
                 modifier = Modifier.fillMaxWidth()
             ) {
@@ -223,51 +109,21 @@ fun InjectionLogScreen(
                         .fillMaxWidth(),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    Text(
-                        text = "Record New Injection",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
-                    )
-
-                    OutlinedTextField(
-                        value = dosageGiven,
-                        onValueChange = { dosageGiven = it },
-                        label = { Text("Dosage Administered") },
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true
-                    )
-
-                    OutlinedTextField(
-                        value = lotNumber,
-                        onValueChange = { lotNumber = it },
-                        label = { Text("Lot Number (Optional)") },
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true
-                    )
-
-                    Column {
-                        Text(
-                            text = "Pain Level: ${painLevel.toInt()} / 10",
-                            style = MaterialTheme.typography.bodyMedium
-                        )
-                        Slider(
-                            value = painLevel,
-                            onValueChange = { painLevel = it },
-                            valueRange = 0f..10f,
-                            steps = 9
-                        )
-                    }
-
-                    OutlinedTextField(
-                        value = notes,
-                        onValueChange = { notes = it },
-                        label = { Text("Notes / Side Effects") },
-                        modifier = Modifier.fillMaxWidth(),
-                        maxLines = 2
-                    )
-
-                    Button(
-                        onClick = {
+                    InjectionLogInjectionForm(
+                        medications = medications,
+                        selectedMedicationId = selectedMedicationId,
+                        onMedicationSelected = { selectedMedicationId = it },
+                        dosageGiven = dosageGiven,
+                        onDosageChanged = { dosageGiven = it },
+                        lotNumber = lotNumber,
+                        onLotNumberChanged = { lotNumber = it },
+                        painLevel = painLevel,
+                        onPainLevelChanged = { painLevel = it },
+                        notes = notes,
+                        onNotesChanged = { notes = it },
+                        selectedSite = selectedSite,
+                        onSiteSelected = { selectedSite = it },
+                        onSave = {
                             if (medications.isNotEmpty()) {
                                 val medId = if (selectedMedicationId != 0L) selectedMedicationId else medications.first().id
                                 onSaveInjectionLog(
@@ -282,18 +138,15 @@ fun InjectionLogScreen(
                                 lotNumber = ""
                                 notes = ""
                             }
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                        enabled = medications.isNotEmpty(),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.primary,
-                            contentColor = MaterialTheme.colorScheme.onPrimary
-                        )
-                    ) {
-                        Icon(imageVector = Icons.Rounded.Check, contentDescription = null)
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("Save Injection Log")
-                    }
+                        }
+                    )
+                     OutlinedTextField(
+                         value = notes,
+                         onValueChange = { notes = it },
+                         label = { Text("Notes / Side Effects") },
+                         modifier = Modifier.fillMaxWidth(),
+                         maxLines = 2
+                     )
                 }
             }
 
@@ -311,85 +164,25 @@ fun InjectionLogScreen(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             } else {
-                injectionLogs.forEach { log ->
-                    InjectionLogItemCard(
-                        log = log,
-                        onDelete = { onDeleteInjectionLog(log) }
-                    )
+                LazyColumn(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    items(injectionLogs) { log ->
+                        InjectionLogItemCard(
+                            log = log,
+                            onDelete = { onDeleteInjectionLog(log) }
+                        )
+                    }
                 }
             }
         }
     }
 }
+
 
 @Composable
-fun InjectionLogItemCard(
-    log: InjectionLogEntity,
-    onDelete: () -> Unit
-) {
-    val dateFormat = SimpleDateFormat("MMM dd, yyyy - HH:mm", androidx.compose.ui.platform.LocalLocale.current.platformLocale)
-    val formattedDate = dateFormat.format(Date(log.timestamp))
-
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainer
-        )
-    ) {
-        Column(
-            modifier = Modifier
-                .padding(16.dp)
-                .fillMaxWidth(),
-            verticalArrangement = Arrangement.spacedBy(6.dp)
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = log.site.name.replace("_", " "),
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
-                )
-                IconButton(onClick = onDelete) {
-                    Icon(
-                        imageVector = Icons.Rounded.Delete,
-                        contentDescription = "Delete Log",
-                        tint = MaterialTheme.colorScheme.error
-                    )
-                }
-            }
-
-            Text(
-                text = "Dosage: ${log.dosageGiven} | Pain: ${log.painLevel ?: 0}/10",
-                style = MaterialTheme.typography.bodyMedium
-            )
-            Text(
-                text = "Date: $formattedDate",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            if (!log.lotNumber.isNullOrBlank()) {
-                Text(
-                    text = "Lot #: ${log.lotNumber}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.outline
-                )
-            }
-            if (!log.notes.isNullOrBlank()) {
-                Text(
-                    text = "Notes: ${log.notes}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-        }
-    }
-}
-
 @Preview(showBackground = true)
-@Composable
 fun InjectionLogScreenPreview() {
     BioShotTheme {
         InjectionLogScreen(

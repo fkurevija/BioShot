@@ -10,6 +10,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.fkurevija.bioshot.core.database.InjectionLogEntity
+import com.fkurevija.bioshot.core.database.MedicationEntity
+import com.fkurevija.bioshot.core.database.SymptomEntryEntity
 import com.fkurevija.bioshot.feature.chart.PkChartScreen
 import com.fkurevija.bioshot.feature.dashboard.DashboardScreen
 import com.fkurevija.bioshot.feature.log.InjectionLogScreen
@@ -32,13 +35,17 @@ sealed class NavigationItem(val route: Screen, val label: String, val icon: Imag
 @Composable
 fun BioShotNavGraph(
     viewModel: BioShotViewModel,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    medications: List<MedicationEntity> = emptyList(),
+    injectionLogs: List<InjectionLogEntity> = emptyList(),
+    symptomEntries: List<SymptomEntryEntity> = emptyList()
 ) {
     var currentScreen by remember { mutableStateOf<Screen>(Screen.Dashboard) }
 
-    val medications by viewModel.medications.collectAsStateWithLifecycle()
-    val injectionLogs by viewModel.injectionLogs.collectAsStateWithLifecycle()
-    val symptomEntries by viewModel.symptomEntries.collectAsStateWithLifecycle()
+    // Use passed parameters or fall back to viewModel state
+    val effectiveMedications = if (medications.isNotEmpty()) medications else viewModel.medications.value
+    val effectiveInjectionLogs = if (injectionLogs.isNotEmpty()) injectionLogs else viewModel.injectionLogs.value
+    val effectiveSymptomEntries = if (symptomEntries.isNotEmpty()) symptomEntries else viewModel.symptomEntries.value
 
     val navItems = listOf(
         NavigationItem.Dashboard,
@@ -70,8 +77,8 @@ fun BioShotNavGraph(
             when (currentScreen) {
                 is Screen.Dashboard -> {
                     DashboardScreen(
-                        medications = medications,
-                        injectionLogs = injectionLogs,
+                        medications = effectiveMedications,
+                        injectionLogs = effectiveInjectionLogs,
                         onQuickLogClick = { currentScreen = Screen.InjectionLog },
                         onNavigateToMedications = { currentScreen = Screen.MedicationList },
                         onNavigateToLog = { currentScreen = Screen.InjectionLog },
@@ -80,7 +87,7 @@ fun BioShotNavGraph(
                 }
                 is Screen.MedicationList -> {
                     MedicationListScreen(
-                        medications = medications,
+                        medications = effectiveMedications,
                         onAddMedicationClick = { currentScreen = Screen.MedicationSetupWizard },
                         onDeleteMedication = { viewModel.deleteMedication(it) }
                     )
@@ -96,8 +103,8 @@ fun BioShotNavGraph(
                 }
                 is Screen.InjectionLog -> {
                     InjectionLogScreen(
-                        medications = medications,
-                        injectionLogs = injectionLogs,
+                        medications = effectiveMedications,
+                        injectionLogs = effectiveInjectionLogs,
                         onSaveInjectionLog = { medId, site, dosage, lot, notes, pain, sideEffects ->
                             viewModel.insertInjectionLog(medId, site, dosage, lot, notes, pain, sideEffects)
                         },
@@ -106,25 +113,28 @@ fun BioShotNavGraph(
                 }
                 is Screen.SymptomDiary -> {
                     SymptomDiaryScreen(
-                        symptomEntries = symptomEntries,
-                        injectionLogs = injectionLogs,
+                        symptomEntries = effectiveSymptomEntries,
+                        injectionLogs = effectiveInjectionLogs,
+                        medications = effectiveMedications,
                         onSaveSymptomEntry = { severity, name, notes, tags ->
                             viewModel.insertSymptomEntry(severity, name, notes, tags)
                         },
-                        onDeleteSymptomEntry = { viewModel.deleteSymptomEntry(it) }
+                        onDeleteSymptomEntry = { entry ->
+                            viewModel.deleteSymptomEntry(entry)
+                        }
                     )
                 }
                 is Screen.PkChart -> {
                     PkChartScreen(
-                        medications = medications,
-                        injectionLogs = injectionLogs
+                        medications = effectiveMedications,
+                        injectionLogs = effectiveInjectionLogs
                     )
                 }
                 is Screen.DoctorExportAndSettings -> {
                     DoctorExportAndSettingsScreen(
-                        medications = medications,
-                        injectionLogs = injectionLogs,
-                        symptomEntries = symptomEntries,
+                        medications = effectiveMedications,
+                        injectionLogs = effectiveInjectionLogs,
+                        symptomEntries = effectiveSymptomEntries,
                         forceDark = viewModel.forceDark.collectAsStateWithLifecycle().value,
                         remindersEnabled = viewModel.remindersEnabled.collectAsStateWithLifecycle().value,
                         migrationError = viewModel.migrationError.collectAsStateWithLifecycle().value,
