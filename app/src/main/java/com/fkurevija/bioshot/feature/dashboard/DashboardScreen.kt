@@ -31,7 +31,8 @@ fun DashboardScreen(
     onQuickLogClick: () -> Unit,
     onNavigateToMedications: () -> Unit,
     onNavigateToLog: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    innerPadding: PaddingValues = PaddingValues(0.dp)
 ) {
     val scrollState = rememberScrollState()
     val latestMedication = medications.firstOrNull()
@@ -61,6 +62,7 @@ fun DashboardScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(scrollState)
+                .padding(innerPadding)
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {

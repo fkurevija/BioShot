@@ -7,8 +7,6 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
@@ -26,12 +24,10 @@ class MainActivity : ComponentActivity() {
             val forceDark by viewModel.forceDark.collectAsState()
             val systemDark = isSystemInDarkTheme()
             BioShotTheme(darkTheme = forceDark || systemDark) {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    BioShotNavGraph(
-                        viewModel = viewModel,
-                        modifier = Modifier.padding(innerPadding)
-                    )
-                }
+                BioShotNavGraph(
+                    viewModel = viewModel,
+                    modifier = Modifier.fillMaxSize()
+                )
             }
         }
     }

@@ -51,7 +51,6 @@ fun BioShotNavGraph(
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
-        contentWindowInsets = WindowInsets(0, 0, 0, 0),
         bottomBar = {
             NavigationBar {
                 navItems.forEach { item ->
@@ -66,9 +65,7 @@ fun BioShotNavGraph(
         }
     ) { innerPadding ->
         Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
+            modifier = Modifier.fillMaxSize()
         ) {
             when (currentScreen) {
                 is Screen.Dashboard -> {
@@ -77,7 +74,8 @@ fun BioShotNavGraph(
                         injectionLogs = injectionLogs,
                         onQuickLogClick = { currentScreen = Screen.InjectionLog },
                         onNavigateToMedications = { currentScreen = Screen.MedicationList },
-                        onNavigateToLog = { currentScreen = Screen.InjectionLog }
+                        onNavigateToLog = { currentScreen = Screen.InjectionLog },
+                        innerPadding = innerPadding
                     )
                 }
                 is Screen.MedicationList -> {
