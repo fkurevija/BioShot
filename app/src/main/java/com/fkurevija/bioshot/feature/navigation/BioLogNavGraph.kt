@@ -127,8 +127,10 @@ fun BioShotNavGraph(
                         symptomEntries = symptomEntries,
                         forceDark = viewModel.forceDark.collectAsStateWithLifecycle().value,
                         remindersEnabled = viewModel.remindersEnabled.collectAsStateWithLifecycle().value,
+                        migrationError = viewModel.migrationError.collectAsStateWithLifecycle().value,
                         onForceDarkChanged = { viewModel.setForceDark(it) },
-                        onRemindersChanged = { viewModel.setRemindersEnabled(it) }
+                        onRemindersChanged = { viewModel.setRemindersEnabled(it) },
+                        onResetDatabase = { viewModel.resetDatabase() }
                     )
                 }
             }

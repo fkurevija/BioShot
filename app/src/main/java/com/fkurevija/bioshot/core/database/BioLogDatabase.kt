@@ -1,6 +1,7 @@
 package com.fkurevija.bioshot.core.database
 
 import android.content.Context
+import android.database.sqlite.SQLiteDatabase
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
@@ -8,6 +9,7 @@ import androidx.room.TypeConverters
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import kotlinx.serialization.json.Json
+import java.io.File
 
 @Database(
     entities = [
@@ -16,7 +18,7 @@ import kotlinx.serialization.json.Json
         SymptomEntryEntity::class
     ],
     version = 2,
-    exportSchema = false
+    exportSchema = true
 )
 @TypeConverters(Converters::class)
 abstract class BioShotDatabase : RoomDatabase() {
@@ -31,16 +33,64 @@ abstract class BioShotDatabase : RoomDatabase() {
 
         fun getDatabase(context: Context): BioShotDatabase {
             return INSTANCE ?: synchronized(this) {
-                val instance = Room.databaseBuilder(
-                    context.applicationContext,
-                    BioShotDatabase::class.java,
-                    "bioshot_database"
-                )
-                    .addMigrations(migration1To2)
-                    .build()
+                val instance = buildDatabase(context.applicationContext)
                 INSTANCE = instance
                 instance
             }
+        }
+
+        private fun buildDatabase(context: Context): BioShotDatabase {
+            // Pre-migration backup: if an older database exists, export all data before
+            // Room runs migrations. Backup failures are non-fatal; migration proceeds regardless.
+            val currentVersion = getExistingDatabaseVersion(context)
+            if (currentVersion > 0 && currentVersion < 2) {
+                try {
+                    DatabaseBackupManager.backupBeforeMigration(context, currentVersion)
+                } catch (_: Exception) {
+                    // Non-fatal: we tried.
+                }
+            }
+
+            val builder = Room.databaseBuilder(
+                context,
+                BioShotDatabase::class.java,
+                "bioshot_database"
+            )
+                .addMigrations(migration1To2)
+
+            return try {
+                builder.build()
+            } catch (e: Exception) {
+                throw DatabaseMigrationException(
+                    "Room database migration failed. Your data backup is in the app's " +
+                            "files directory under bioshot_backups/.",
+                    e
+                )
+            }
+        }
+
+        private fun getExistingDatabaseVersion(context: Context): Int {
+            val dbFile = File(context.filesDir, "bioshot_database")
+            if (!dbFile.exists()) return 0
+            val db = SQLiteDatabase.openDatabase(dbFile.absolutePath, null, SQLiteDatabase.OPEN_READONLY)
+            return try {
+                val cursor = db.rawQuery("PRAGMA user_version", null)
+                try {
+                    if (cursor.moveToFirst()) cursor.getInt(0) else 0
+                } finally {
+                    cursor.close()
+                }
+            } finally {
+                db.close()
+            }
+        }
+
+        /** Drops the database file and clears the singleton so it can be recreated empty. */
+        fun recreateDatabase(context: Context) {
+            INSTANCE = null
+            File(context.filesDir, "bioshot_database").delete()
+            File(context.filesDir, "bioshot_database-wal").delete()
+            File(context.filesDir, "bioshot_database-shm").delete()
         }
 
         private val migration1To2 = object : Migration(1, 2) {

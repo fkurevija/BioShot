@@ -4,6 +4,7 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.fkurevija.bioshot.core.database.BioShotDatabase
+import com.fkurevija.bioshot.core.database.DatabaseMigrationException
 import com.fkurevija.bioshot.core.database.InjectionLogEntity
 import com.fkurevija.bioshot.core.database.MedicationEntity
 import com.fkurevija.bioshot.core.database.InjectionLogDao
@@ -17,6 +18,7 @@ import com.fkurevija.bioshot.core.model.ScheduleType
 import com.fkurevija.bioshot.core.pk.PkCalculator
 import com.fkurevija.bioshot.core.schedule.ScheduleEngine
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
@@ -24,12 +26,37 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 class BioShotViewModel(application: Application) : AndroidViewModel(application) {
-    private val database = BioShotDatabase.getDatabase(application)
-    private val medicationDao: MedicationDao = database.medicationDao()
-    private val injectionLogDao: InjectionLogDao = database.injectionLogDao()
-    private val symptomDao: SymptomDao = database.symptomDao()
 
-    private val settingsRepository = SettingsRepository(application)
+    private val appContext = application
+
+    /** Set when a database migration failed and the app fell back to an empty database. */
+    val migrationError: MutableStateFlow<String?> = MutableStateFlow(null)
+
+    private var database: BioShotDatabase? = null
+    private val medicationDao: MedicationDao? by lazy { database?.medicationDao() }
+    private val injectionLogDao: InjectionLogDao? by lazy { database?.injectionLogDao() }
+    private val symptomDao: SymptomDao? by lazy { database?.symptomDao() }
+
+    private val settingsRepository = SettingsRepository(appContext)
+
+    init {
+        try {
+            database = BioShotDatabase.getDatabase(appContext)
+        } catch (e: DatabaseMigrationException) {
+            migrationError.value = e.message
+            // Fall back to an empty database so the app still launches.
+            BioShotDatabase.recreateDatabase(appContext)
+            database = BioShotDatabase.getDatabase(appContext)
+        }
+    }
+
+    /** Drops all data and recreates the database from scratch. Last-resort recovery. */
+    fun resetDatabase() {
+        database = null
+        migrationError.value = null
+        BioShotDatabase.recreateDatabase(appContext)
+        database = BioShotDatabase.getDatabase(appContext)
+    }
 
     val forceDark: StateFlow<Boolean> = settingsRepository.forceDark
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
@@ -44,18 +71,21 @@ class BioShotViewModel(application: Application) : AndroidViewModel(application)
         viewModelScope.launch { settingsRepository.setRemindersEnabled(enabled) }
     }
 
-    val medications: StateFlow<List<MedicationEntity>> = medicationDao.getAllMedications()
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    val medications: StateFlow<List<MedicationEntity>> = medicationDao?.getAllMedications()
+        ?.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+        ?: MutableStateFlow(emptyList())
 
-    val injectionLogs: StateFlow<List<InjectionLogEntity>> = injectionLogDao.getAllInjectionLogs()
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    val injectionLogs: StateFlow<List<InjectionLogEntity>> = injectionLogDao?.getAllInjectionLogs()
+        ?.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+        ?: MutableStateFlow(emptyList())
 
-    val symptomEntries: StateFlow<List<SymptomEntryEntity>> = symptomDao.getAllSymptomEntries()
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    val symptomEntries: StateFlow<List<SymptomEntryEntity>> = symptomDao?.getAllSymptomEntries()
+        ?.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+        ?: MutableStateFlow(emptyList())
 
     fun insertMedication(name: String, dosage: String, frequency: ScheduleType, deviceType: DeviceType, notes: String?) {
         viewModelScope.launch {
-            medicationDao.insertMedication(
+            medicationDao?.insertMedication(
                 MedicationEntity(
                     name = name,
                     dosage = dosage,
@@ -69,20 +99,20 @@ class BioShotViewModel(application: Application) : AndroidViewModel(application)
 
     fun updateMedication(medication: MedicationEntity) {
         viewModelScope.launch {
-            medicationDao.updateMedication(medication)
+            medicationDao?.updateMedication(medication)
         }
     }
 
     fun deleteMedication(medication: MedicationEntity) {
         viewModelScope.launch {
-            medicationDao.deleteInjectionLogsForMedication(medication.id)
-            medicationDao.deleteMedication(medication)
+            medicationDao?.deleteInjectionLogsForMedication(medication.id)
+            medicationDao?.deleteMedication(medication)
         }
     }
 
     fun insertInjectionLog(medicationId: Long, site: InjectionSite, dosageGiven: String, lotNumber: String?, notes: String?, painLevel: Int?, sideEffects: List<String>) {
         viewModelScope.launch {
-            injectionLogDao.insertInjectionLog(
+            injectionLogDao?.insertInjectionLog(
                 InjectionLogEntity(
                     medicationId = medicationId,
                     site = site,
@@ -98,13 +128,13 @@ class BioShotViewModel(application: Application) : AndroidViewModel(application)
 
     fun deleteInjectionLog(log: InjectionLogEntity) {
         viewModelScope.launch {
-            injectionLogDao.deleteInjectionLog(log)
+            injectionLogDao?.deleteInjectionLog(log)
         }
     }
 
     fun insertSymptomEntry(severity: Int, symptomName: String, notes: String?, tags: List<String>) {
         viewModelScope.launch {
-            symptomDao.insertSymptomEntry(
+            symptomDao?.insertSymptomEntry(
                 SymptomEntryEntity(
                     severity = severity.coerceIn(1, 10),
                     symptomName = symptomName,
@@ -117,7 +147,7 @@ class BioShotViewModel(application: Application) : AndroidViewModel(application)
 
     fun deleteSymptomEntry(entry: SymptomEntryEntity) {
         viewModelScope.launch {
-            symptomDao.deleteSymptomEntry(entry)
+            symptomDao?.deleteSymptomEntry(entry)
         }
     }
 }

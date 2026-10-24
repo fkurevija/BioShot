@@ -29,8 +29,10 @@ fun DoctorExportAndSettingsScreen(
     symptomEntries: List<SymptomEntryEntity>,
     forceDark: Boolean = false,
     remindersEnabled: Boolean = false,
+    migrationError: String? = null,
     onForceDarkChanged: (Boolean) -> Unit = {},
     onRemindersChanged: (Boolean) -> Unit = {},
+    onResetDatabase: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -217,6 +219,40 @@ fun DoctorExportAndSettingsScreen(
                             }
                         }
                     }
+
+                        HorizontalDivider()
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(imageVector = Icons.Rounded.Delete, contentDescription = null, tint = MaterialTheme.colorScheme.error)
+                                Column {
+                                    Text(text = "Reset Database", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                                    Text(
+                                        text = "Erase all medications, injections, and symptoms. Use only if the app fails to open after an update.",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
+                            if (migrationError != null) {
+                                Button(
+                                    onClick = { onResetDatabase() },
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = MaterialTheme.colorScheme.error,
+                                        contentColor = MaterialTheme.colorScheme.onError
+                                    )
+                                ) {
+                                    Text("Reset Now")
+                                }
+                            }
+                        }
                 }
             }
         }
