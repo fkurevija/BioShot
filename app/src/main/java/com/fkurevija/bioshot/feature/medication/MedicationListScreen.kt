@@ -79,6 +79,7 @@ fun MedicationListScreen(
                     .fillMaxSize()
                     .padding(innerPadding)
                     .padding(16.dp),
+                contentPadding = PaddingValues(bottom = 80.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 items(medications) { medication ->

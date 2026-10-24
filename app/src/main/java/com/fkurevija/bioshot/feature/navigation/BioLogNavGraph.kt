@@ -7,8 +7,9 @@ import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.fkurevija.bioshot.core.database.InjectionLogEntity
 import com.fkurevija.bioshot.core.database.MedicationEntity
@@ -59,7 +60,10 @@ fun BioShotNavGraph(
     Scaffold(
         modifier = modifier.fillMaxSize(),
         bottomBar = {
-            NavigationBar {
+            NavigationBar(
+                tonalElevation = 0.dp,
+                containerColor = MaterialTheme.colorScheme.surface
+            ) {
                 navItems.forEach { item ->
                     NavigationBarItem(
                         selected = currentScreen == item.route,
@@ -70,11 +74,10 @@ fun BioShotNavGraph(
                 }
             }
         }
-    ) { innerPadding ->
+    ) { _ ->
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(bottom = innerPadding.calculateBottomPadding())
         ) {
             when (currentScreen) {
                 is Screen.Dashboard -> {
@@ -84,7 +87,7 @@ fun BioShotNavGraph(
                         onQuickLogClick = { currentScreen = Screen.InjectionLog },
                         onNavigateToMedications = { currentScreen = Screen.MedicationList },
                         onNavigateToLog = { currentScreen = Screen.InjectionLog },
-                        innerPadding = PaddingValues(top = innerPadding.calculateTopPadding())
+                        innerPadding = PaddingValues(top = 0.dp)
                     )
                 }
                 is Screen.MedicationList -> {
@@ -142,6 +145,7 @@ fun BioShotNavGraph(
                         migrationError = viewModel.migrationError.collectAsStateWithLifecycle().value,
                         onForceDarkChanged = { viewModel.setForceDark(it) },
                         onRemindersChanged = { viewModel.setRemindersEnabled(it) },
+                        onCheckDatabaseErrors = { viewModel.checkDatabaseErrors() },
                         onResetDatabase = { viewModel.resetDatabase() }
                     )
                 }

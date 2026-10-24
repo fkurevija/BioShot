@@ -65,7 +65,8 @@ fun InjectionLogScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
                 .verticalScroll(scrollState)
-                .padding(16.dp),
+                .padding(16.dp)
+                .padding(bottom = 80.dp),
             verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
             Text(

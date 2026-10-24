@@ -1,6 +1,7 @@
 package com.fkurevija.bioshot.feature.settings
 
 import android.content.Intent
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -11,6 +12,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -32,6 +34,7 @@ fun DoctorExportAndSettingsScreen(
     migrationError: String? = null,
     onForceDarkChanged: (Boolean) -> Unit = {},
     onRemindersChanged: (Boolean) -> Unit = {},
+    onCheckDatabaseErrors: () -> Unit = {},
     onResetDatabase: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
@@ -76,7 +79,8 @@ fun DoctorExportAndSettingsScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
                 .verticalScroll(scrollState)
-                .padding(16.dp),
+                .padding(16.dp)
+                .padding(bottom = 80.dp),
             verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
             Text(
@@ -223,26 +227,93 @@ fun DoctorExportAndSettingsScreen(
 
                         HorizontalDivider()
 
+                        var hasChecked by remember { mutableStateOf(false) }
+
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Row(
+                                modifier = if (hasChecked && migrationError == null) {
+                                    Modifier.weight(1f)
+                                } else {
+                                    Modifier
+                                        .weight(1f)
+                                        .clickable {
+                                            if (hasChecked) {
+                                                hasChecked = false
+                                            } else {
+                                                hasChecked = true
+                                                onCheckDatabaseErrors()
+                                            }
+                                        }
+                                },
                                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Icon(imageVector = Icons.Rounded.Delete, contentDescription = null, tint = MaterialTheme.colorScheme.error)
-                                Column {
-                                    Text(text = "Reset Database", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                                    Text(
-                                        text = "Erase all medications, injections, and symptoms. Use only if the app fails to open after an update.",
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
+                                when {
+                                    !hasChecked -> {
+                                        Icon(
+                                            imageVector = Icons.Rounded.Search,
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.secondary
+                                        )
+                                        Column {
+                                            Text(
+                                                text = "Check for Database Errors",
+                                                style = MaterialTheme.typography.titleMedium,
+                                                fontWeight = FontWeight.Bold
+                                            )
+                                            Text(
+                                                text = "Tap to verify database integrity and check for migration issues.",
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
+                                    }
+                                    migrationError != null -> {
+                                        Icon(
+                                            imageVector = Icons.Rounded.Delete,
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.error
+                                        )
+                                        Column {
+                                            Text(
+                                                text = "Reset Database",
+                                                style = MaterialTheme.typography.titleMedium,
+                                                fontWeight = FontWeight.Bold
+                                            )
+                                            Text(
+                                                text = migrationError
+                                                    ?: "Database migration failed. Tap Reset to erase all data.",
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
+                                    }
+                                    else -> {
+                                        Icon(
+                                            imageVector = Icons.Rounded.CheckCircle,
+                                            contentDescription = null,
+                                            tint = Color(0xFF4CAF50)
+                                        )
+                                        Column {
+                                            Text(
+                                                text = "No Database Errors Found",
+                                                style = MaterialTheme.typography.titleMedium,
+                                                fontWeight = FontWeight.Bold
+                                            )
+                                            Text(
+                                                text = "Your database is healthy.",
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
+                                    }
                                 }
                             }
-                            if (migrationError != null) {
+                            if (hasChecked && migrationError != null) {
                                 Button(
                                     onClick = { onResetDatabase() },
                                     colors = ButtonDefaults.buttonColors(

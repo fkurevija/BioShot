@@ -58,6 +58,25 @@ class BioShotViewModel(application: Application) : AndroidViewModel(application)
         database = BioShotDatabase.getDatabase(appContext)
     }
 
+    /** Verifies database integrity. Preserves any migration error already detected at startup;
+     * otherwise runs a lightweight query to validate the database is accessible. */
+    fun checkDatabaseErrors() {
+        viewModelScope.launch {
+            // Preserve any migration error already detected at startup — the fallback
+            // empty DB may be healthy, but the migration failure is still actionable.
+            if (migrationError.value != null) return@launch
+            try {
+                database?.openHelper?.readableDatabase?.query("SELECT 1")?.use { cursor ->
+                    cursor.moveToFirst()
+                }
+            } catch (e: DatabaseMigrationException) {
+                migrationError.value = e.message
+            } catch (e: Exception) {
+                migrationError.value = e.message ?: "Database check failed with an unknown error"
+            }
+        }
+    }
+
     val forceDark: StateFlow<Boolean> = settingsRepository.forceDark
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
     val remindersEnabled: StateFlow<Boolean> = settingsRepository.remindersEnabled
