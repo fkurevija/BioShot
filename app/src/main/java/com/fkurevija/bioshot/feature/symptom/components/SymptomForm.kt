@@ -1,5 +1,6 @@
 package com.fkurevija.bioshot.feature.symptom.components
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -42,7 +43,8 @@ fun SymptomForm(
                 onValueChange = onSymptomNameChange,
                 label = { Text("Symptom Title (e.g., Knee joint stiffness)") },
                 modifier = Modifier.fillMaxWidth(),
-                singleLine = true
+                singleLine = true,
+                shape = MaterialTheme.shapes.medium
             )
 
             // Tags selector
@@ -56,11 +58,22 @@ fun SymptomForm(
                 tagRows.forEach { rowTags ->
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         rowTags.forEach { tag ->
-                            FilterChip(
-                                selected = selectedTag == tag,
+                            val isSelected = selectedTag == tag
+                            OutlinedButton(
                                 onClick = { onTagSelected(tag) },
-                                label = { Text(tag) }
-                            )
+                                colors = ButtonDefaults.outlinedButtonColors(
+                                    containerColor = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
+                                    contentColor = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
+                                ),
+                                border = BorderStroke(2.dp, if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline),
+                                modifier = Modifier.height(40.dp)
+                            ) {
+                                Text(
+                                    text = tag,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
                         }
                     }
                 }
@@ -84,7 +97,8 @@ fun SymptomForm(
                 onValueChange = onNotesChange,
                 label = { Text("Notes / Observations") },
                 modifier = Modifier.fillMaxWidth(),
-                maxLines = 3
+                maxLines = 3,
+                shape = MaterialTheme.shapes.medium
             )
 
             Spacer(modifier = Modifier.height(8.dp))

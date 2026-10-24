@@ -43,6 +43,8 @@ fun SymptomDiaryScreen(
 
     val commonTags = listOf("Joint Pain", "Fatigue", "Skin Flare", "Gastrointestinal", "Headache", "Fever")
 
+    val scrollState = rememberScrollState()
+
     Scaffold(
         modifier = modifier.fillMaxSize(),
         topBar = {
@@ -59,7 +61,7 @@ fun SymptomDiaryScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .verticalScroll(rememberScrollState())
+                .verticalScroll(scrollState)
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {

@@ -1,0 +1,39 @@
+{
+  "app": {
+    "packageName": "com.fkurevija.bioshot",
+    "name": "BioShot",
+    "version": {
+      "code": 1,
+      "name": "1.0"
+    }
+  },
+  "launch": {
+    "adb": {
+      "description": "Launch BioShot app using ADB on any connected device",
+      "command": "adb shell am start -n com.fkurevija.bioshot/.MainActivity",
+      "alternatives": [
+        "adb shell am start -n com.fkurevija.bioshot/.ui.main.MainActivity",
+        "adb shell am start -n com.fkurevija.bioshot/.ui.SplashScreenActivity",
+        "adb shell am start -n com.fkurevija.bioshot/.SymptomDiaryScreen"
+      ]
+    },
+    "androidStudio": {
+      "description": "Android Studio run configuration hints",
+      "runConfig": ".idea/runConfigs/BioShot.xml",
+      "tip": "Use Android Studio's Run 'BioShot' button or navigate to Run > Run 'BioShot'"
+    }
+  },
+  "device": {
+    "requirements": [
+      "Connected Android device via USB or emulator running",
+      "USB debugging enabled on device",
+      "Device recognized by `adb devices`"
+    ],
+    "emulator": {
+      "create": "adb emu avd",
+      "list": "adb avd list",
+      "start": "adb emulator -avd <avd_name> -memory 2048"
+    }
+  },
+  "notes": "The main activity may vary. Check AndroidManifest.xml for the exact launchable activity. If the adb command fails, try running 'adb shell pm list activities com.fkurevija.bioshot' to list all exportable activities."
+}

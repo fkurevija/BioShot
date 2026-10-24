@@ -1,5 +1,6 @@
 package com.fkurevija.bioshot.feature.log.components
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.*
@@ -40,16 +41,20 @@ fun InjectionLogBodyMap(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            SiteButton(
-                site = InjectionSite.ABDOMEN_LEFT,
-                isSelected = selectedSite == InjectionSite.ABDOMEN_LEFT,
-                onClick = { onSiteSelected(InjectionSite.ABDOMEN_LEFT) }
-            )
-            SiteButton(
-                site = InjectionSite.ABDOMEN_RIGHT,
-                isSelected = selectedSite == InjectionSite.ABDOMEN_RIGHT,
-                onClick = { onSiteSelected(InjectionSite.ABDOMEN_RIGHT) }
-            )
+            Box(modifier = Modifier.weight(1f)) {
+                SiteButton(
+                    site = InjectionSite.ABDOMEN_LEFT,
+                    isSelected = selectedSite == InjectionSite.ABDOMEN_LEFT,
+                    onClick = { onSiteSelected(InjectionSite.ABDOMEN_LEFT) }
+                )
+            }
+            Box(modifier = Modifier.weight(1f)) {
+                SiteButton(
+                    site = InjectionSite.ABDOMEN_RIGHT,
+                    isSelected = selectedSite == InjectionSite.ABDOMEN_RIGHT,
+                    onClick = { onSiteSelected(InjectionSite.ABDOMEN_RIGHT) }
+                )
+            }
         }
 
         // Row 2: Thigh
@@ -57,16 +62,20 @@ fun InjectionLogBodyMap(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            SiteButton(
-                site = InjectionSite.THIGH_LEFT,
-                isSelected = selectedSite == InjectionSite.THIGH_LEFT,
-                onClick = { onSiteSelected(InjectionSite.THIGH_LEFT) }
-            )
-            SiteButton(
-                site = InjectionSite.THIGH_RIGHT,
-                isSelected = selectedSite == InjectionSite.THIGH_RIGHT,
-                onClick = { onSiteSelected(InjectionSite.THIGH_RIGHT) }
-            )
+            Box(modifier = Modifier.weight(1f)) {
+                SiteButton(
+                    site = InjectionSite.THIGH_LEFT,
+                    isSelected = selectedSite == InjectionSite.THIGH_LEFT,
+                    onClick = { onSiteSelected(InjectionSite.THIGH_LEFT) }
+                )
+            }
+            Box(modifier = Modifier.weight(1f)) {
+                SiteButton(
+                    site = InjectionSite.THIGH_RIGHT,
+                    isSelected = selectedSite == InjectionSite.THIGH_RIGHT,
+                    onClick = { onSiteSelected(InjectionSite.THIGH_RIGHT) }
+                )
+            }
         }
 
         // Row 3: Arm
@@ -74,16 +83,20 @@ fun InjectionLogBodyMap(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            SiteButton(
-                site = InjectionSite.ARM_LEFT,
-                isSelected = selectedSite == InjectionSite.ARM_LEFT,
-                onClick = { onSiteSelected(InjectionSite.ARM_LEFT) }
-            )
-            SiteButton(
-                site = InjectionSite.ARM_RIGHT,
-                isSelected = selectedSite == InjectionSite.ARM_RIGHT,
-                onClick = { onSiteSelected(InjectionSite.ARM_RIGHT) }
-            )
+            Box(modifier = Modifier.weight(1f)) {
+                SiteButton(
+                    site = InjectionSite.ARM_LEFT,
+                    isSelected = selectedSite == InjectionSite.ARM_LEFT,
+                    onClick = { onSiteSelected(InjectionSite.ARM_LEFT) }
+                )
+            }
+            Box(modifier = Modifier.weight(1f)) {
+                SiteButton(
+                    site = InjectionSite.ARM_RIGHT,
+                    isSelected = selectedSite == InjectionSite.ARM_RIGHT,
+                    onClick = { onSiteSelected(InjectionSite.ARM_RIGHT) }
+                )
+            }
         }
 
         // Row 4: Buttock
@@ -91,16 +104,20 @@ fun InjectionLogBodyMap(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            SiteButton(
-                site = InjectionSite.BUTTOCK_LEFT,
-                isSelected = selectedSite == InjectionSite.BUTTOCK_LEFT,
-                onClick = { onSiteSelected(InjectionSite.BUTTOCK_LEFT) }
-            )
-            SiteButton(
-                site = InjectionSite.BUTTOCK_RIGHT,
-                isSelected = selectedSite == InjectionSite.BUTTOCK_RIGHT,
-                onClick = { onSiteSelected(InjectionSite.BUTTOCK_RIGHT) }
-            )
+            Box(modifier = Modifier.weight(1f)) {
+                SiteButton(
+                    site = InjectionSite.BUTTOCK_LEFT,
+                    isSelected = selectedSite == InjectionSite.BUTTOCK_LEFT,
+                    onClick = { onSiteSelected(InjectionSite.BUTTOCK_LEFT) }
+                )
+            }
+            Box(modifier = Modifier.weight(1f)) {
+                SiteButton(
+                    site = InjectionSite.BUTTOCK_RIGHT,
+                    isSelected = selectedSite == InjectionSite.BUTTOCK_RIGHT,
+                    onClick = { onSiteSelected(InjectionSite.BUTTOCK_RIGHT) }
+                )
+            }
         }
     }
 }
@@ -113,13 +130,16 @@ private fun SiteButton(
     onClick: () -> Unit
 ) {
     val label = site.name.replace("_", " ")
-    Button(
+    OutlinedButton(
         onClick = onClick,
-        colors = ButtonDefaults.buttonColors(
+        colors = ButtonDefaults.outlinedButtonColors(
             containerColor = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
             contentColor = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
         ),
-        modifier = Modifier.fillMaxWidth()
+        border = BorderStroke(2.dp, if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline),
+        modifier = Modifier
+            .fillMaxWidth(1f)
+            .height(48.dp)
     ) {
         Text(
             text = label,

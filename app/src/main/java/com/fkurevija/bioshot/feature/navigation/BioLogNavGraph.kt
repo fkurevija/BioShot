@@ -72,7 +72,9 @@ fun BioShotNavGraph(
         }
     ) { innerPadding ->
         Box(
-            modifier = Modifier.fillMaxSize()
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(bottom = innerPadding.calculateBottomPadding())
         ) {
             when (currentScreen) {
                 is Screen.Dashboard -> {
@@ -82,7 +84,7 @@ fun BioShotNavGraph(
                         onQuickLogClick = { currentScreen = Screen.InjectionLog },
                         onNavigateToMedications = { currentScreen = Screen.MedicationList },
                         onNavigateToLog = { currentScreen = Screen.InjectionLog },
-                        innerPadding = innerPadding
+                        innerPadding = PaddingValues(top = innerPadding.calculateTopPadding())
                     )
                 }
                 is Screen.MedicationList -> {
