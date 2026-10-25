@@ -46,6 +46,7 @@ fun BioShotNavGraph(
     val viewModelMedications = viewModel.medications.collectAsStateWithLifecycle().value
     val viewModelLogs = viewModel.injectionLogs.collectAsStateWithLifecycle().value
     val viewModelSymptoms = viewModel.symptomEntries.collectAsStateWithLifecycle().value
+    val viewModelWeights = viewModel.weightLogs.collectAsStateWithLifecycle().value
 
     val effectiveMedications = if (medications.isNotEmpty()) medications else viewModelMedications
     val effectiveInjectionLogs = if (injectionLogs.isNotEmpty()) injectionLogs else viewModelLogs
@@ -86,10 +87,14 @@ fun BioShotNavGraph(
                     DashboardScreen(
                         medications = effectiveMedications,
                         injectionLogs = effectiveInjectionLogs,
+                        weightLogs = viewModelWeights,
                         onQuickLogClick = { currentScreen = Screen.InjectionLog },
                         onNavigateToMedications = { currentScreen = Screen.MedicationList },
                         onNavigateToLog = { currentScreen = Screen.InjectionLog },
                         onNavigateToSettings = { currentScreen = Screen.DoctorExportAndSettings },
+                        onAddWeightLog = { w, unit, fat, waist, notes ->
+                            viewModel.insertWeightLog(w, unit, fat, waist, notes)
+                        },
                         innerPadding = PaddingValues(top = 0.dp)
                     )
                 }

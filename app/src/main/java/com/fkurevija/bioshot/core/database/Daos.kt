@@ -67,3 +67,21 @@ interface SymptomDao {
     @Delete
     suspend fun deleteSymptomEntry(entry: SymptomEntryEntity)
 }
+
+@Dao
+interface WeightDao {
+    @Query("SELECT * FROM weight_logs ORDER BY timestamp DESC")
+    fun getAllWeightLogs(): Flow<List<WeightLogEntity>>
+
+    @Query("SELECT * FROM weight_logs WHERE id = :logId")
+    suspend fun getWeightLogById(logId: Long): WeightLogEntity?
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertWeightLog(log: WeightLogEntity): Long
+
+    @Update
+    suspend fun updateWeightLog(log: WeightLogEntity)
+
+    @Delete
+    suspend fun deleteWeightLog(log: WeightLogEntity)
+}

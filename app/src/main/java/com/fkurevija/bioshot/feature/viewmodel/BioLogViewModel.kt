@@ -8,6 +8,7 @@ import com.fkurevija.bioshot.core.database.DatabaseMigrationException
 import com.fkurevija.bioshot.core.database.DefaultInjectionLogRepository
 import com.fkurevija.bioshot.core.database.DefaultMedicationRepository
 import com.fkurevija.bioshot.core.database.DefaultSymptomRepository
+import com.fkurevija.bioshot.core.database.DefaultWeightRepository
 import com.fkurevija.bioshot.core.database.InjectionLogEntity
 import com.fkurevija.bioshot.core.database.InjectionLogRepository
 import com.fkurevija.bioshot.core.database.MedicationEntity
@@ -15,6 +16,8 @@ import com.fkurevija.bioshot.core.database.MedicationRepository
 import com.fkurevija.bioshot.core.database.SettingsRepository
 import com.fkurevija.bioshot.core.database.SymptomEntryEntity
 import com.fkurevija.bioshot.core.database.SymptomRepository
+import com.fkurevija.bioshot.core.database.WeightLogEntity
+import com.fkurevija.bioshot.core.database.WeightRepository
 import com.fkurevija.bioshot.core.model.DeviceType
 import com.fkurevija.bioshot.core.model.InjectionSite
 import com.fkurevija.bioshot.core.model.ScheduleType
@@ -35,6 +38,7 @@ class BioShotViewModel(application: Application) : AndroidViewModel(application)
     private var medicationRepository: MedicationRepository? = null
     private var injectionLogRepository: InjectionLogRepository? = null
     private var symptomRepository: SymptomRepository? = null
+    private var weightRepository: WeightRepository? = null
 
     val settingsRepository = SettingsRepository(appContext)
 
@@ -55,6 +59,7 @@ class BioShotViewModel(application: Application) : AndroidViewModel(application)
             medicationRepository = DefaultMedicationRepository(db.medicationDao())
             injectionLogRepository = DefaultInjectionLogRepository(db.injectionLogDao())
             symptomRepository = DefaultSymptomRepository(db.symptomDao())
+            weightRepository = DefaultWeightRepository(db.weightDao())
         }
     }
 
@@ -112,6 +117,10 @@ class BioShotViewModel(application: Application) : AndroidViewModel(application)
         ?: MutableStateFlow(emptyList())
 
     val symptomEntries: StateFlow<List<SymptomEntryEntity>> = symptomRepository?.getAllSymptomEntries()
+        ?.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+        ?: MutableStateFlow(emptyList())
+
+    val weightLogs: StateFlow<List<WeightLogEntity>> = weightRepository?.getAllWeightLogs()
         ?.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
         ?: MutableStateFlow(emptyList())
 
@@ -187,6 +196,27 @@ class BioShotViewModel(application: Application) : AndroidViewModel(application)
     fun deleteSymptomEntry(entry: SymptomEntryEntity) {
         viewModelScope.launch {
             symptomRepository?.deleteSymptomEntry(entry)
+        }
+    }
+
+    fun insertWeightLog(weight: Double, unit: String, bodyFatPercentage: Double?, waistCm: Double?, notes: String?, timestamp: Long = System.currentTimeMillis()) {
+        viewModelScope.launch {
+            weightRepository?.insertWeightLog(
+                WeightLogEntity(
+                    timestamp = timestamp,
+                    weight = weight,
+                    unit = unit,
+                    bodyFatPercentage = bodyFatPercentage,
+                    waistCm = waistCm,
+                    notes = notes
+                )
+            )
+        }
+    }
+
+    fun deleteWeightLog(log: WeightLogEntity) {
+        viewModelScope.launch {
+            weightRepository?.deleteWeightLog(log)
         }
     }
 }

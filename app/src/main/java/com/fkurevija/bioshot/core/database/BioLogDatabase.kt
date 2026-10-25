@@ -15,9 +15,10 @@ import java.io.File
     entities = [
         MedicationEntity::class,
         InjectionLogEntity::class,
-        SymptomEntryEntity::class
+        SymptomEntryEntity::class,
+        WeightLogEntity::class
     ],
-    version = 3,
+    version = 4,
     exportSchema = true
 )
 @TypeConverters(Converters::class)
@@ -26,6 +27,7 @@ abstract class BioShotDatabase : RoomDatabase() {
     abstract fun medicationDao(): MedicationDao
     abstract fun injectionLogDao(): InjectionLogDao
     abstract fun symptomDao(): SymptomDao
+    abstract fun weightDao(): WeightDao
 
     companion object {
         @Volatile
@@ -56,7 +58,7 @@ abstract class BioShotDatabase : RoomDatabase() {
                 BioShotDatabase::class.java,
                 "bioshot_database"
             )
-                .addMigrations(migration1To2, migration2To3)
+                .addMigrations(migration1To2, migration2To3, migration3To4)
 
             return try {
                 builder.build()
@@ -109,6 +111,16 @@ abstract class BioShotDatabase : RoomDatabase() {
         private val migration2To3 = object : Migration(2, 3) {
             override fun migrate(database: SupportSQLiteDatabase) {
                 database.execSQL("ALTER TABLE medications ADD COLUMN customIntervalDays INTEGER NOT NULL DEFAULT 14")
+            }
+        }
+
+        private val migration3To4 = object : Migration(3, 4) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.execSQL("ALTER TABLE medications ADD COLUMN isInitialLoadingDose INTEGER NOT NULL DEFAULT 0")
+                database.execSQL("ALTER TABLE medications ADD COLUMN loadingDoseAmount TEXT")
+                database.execSQL("ALTER TABLE medications ADD COLUMN inventoryCount INTEGER NOT NULL DEFAULT 0")
+                database.execSQL("ALTER TABLE medications ADD COLUMN expirationDate INTEGER")
+                database.execSQL("CREATE TABLE IF NOT EXISTS weight_logs (id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, timestamp INTEGER NOT NULL, weight REAL NOT NULL, unit TEXT NOT NULL DEFAULT 'lbs', bodyFatPercentage REAL, waistCm REAL, notes TEXT)")
             }
         }
 

@@ -16,7 +16,11 @@ data class MedicationEntity(
     val customIntervalDays: Int = 14,
     val deviceType: DeviceType,
     val notes: String? = null,
-    val createdAt: Long = System.currentTimeMillis()
+    val createdAt: Long = System.currentTimeMillis(),
+    val isInitialLoadingDose: Boolean = false,
+    val loadingDoseAmount: String? = null,
+    val inventoryCount: Int = 0,
+    val expirationDate: Long? = null
 )
 
 fun MedicationEntity.getFormattedFrequency(): String {
@@ -64,4 +68,16 @@ data class SymptomEntryEntity(
     val symptomName: String,
     val notes: String? = null,
     val tags: List<String> = emptyList()
+)
+
+@Entity(tableName = "weight_logs")
+data class WeightLogEntity(
+    @PrimaryKey(autoGenerate = true)
+    val id: Long = 0L,
+    val timestamp: Long = System.currentTimeMillis(),
+    val weight: Double,
+    val unit: String = "lbs",
+    val bodyFatPercentage: Double? = null,
+    val waistCm: Double? = null,
+    val notes: String? = null
 )
