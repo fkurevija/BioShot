@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
+import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
@@ -12,8 +13,7 @@ import kotlinx.coroutines.flow.map
 private val Context.bioshotDataStore: DataStore<Preferences> by preferencesDataStore(name = "bioshot_settings")
 
 /**
- * Repository over DataStore preferences. Settings are persistent across app restarts so the user's
- * choices (dark theme, reminders) survive app restarts.
+ * Repository over DataStore preferences for app settings (dark theme, reminder preferences, notification time).
  */
 class SettingsRepository(private val context: Context) {
 
@@ -27,6 +27,14 @@ class SettingsRepository(private val context: Context) {
         prefs[booleanPreferencesKey("remindersEnabled")] ?: false
     }
 
+    val reminderHour: Flow<Int> = dataStore.data.map { prefs: Preferences ->
+        prefs[intPreferencesKey("reminderHour")] ?: -1
+    }
+
+    val reminderMinute: Flow<Int> = dataStore.data.map { prefs: Preferences ->
+        prefs[intPreferencesKey("reminderMinute")] ?: -1
+    }
+
     suspend fun setForceDark(enabled: Boolean) {
         dataStore.edit { prefs ->
             prefs[booleanPreferencesKey("forceDark")] = enabled
@@ -36,6 +44,13 @@ class SettingsRepository(private val context: Context) {
     suspend fun setRemindersEnabled(enabled: Boolean) {
         dataStore.edit { prefs ->
             prefs[booleanPreferencesKey("remindersEnabled")] = enabled
+        }
+    }
+
+    suspend fun setReminderTime(hour: Int, minute: Int) {
+        dataStore.edit { prefs ->
+            prefs[intPreferencesKey("reminderHour")] = hour
+            prefs[intPreferencesKey("reminderMinute")] = minute
         }
     }
 }

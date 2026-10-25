@@ -15,6 +15,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.fkurevija.bioshot.core.database.MedicationEntity
 import com.fkurevija.bioshot.core.model.DeviceType
 import com.fkurevija.bioshot.core.model.ScheduleType
 import com.fkurevija.bioshot.ui.theme.BioShotTheme
@@ -49,17 +50,44 @@ private enum class CustomUnit(val label: String, val daysMultiplier: Int) {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MedicationSetupWizardScreen(
+    initialMedication: MedicationEntity? = null,
     onSaveMedication: (String, String, ScheduleType, Int, DeviceType, String?) -> Unit,
     onNavigateBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    var name by remember { mutableStateOf("") }
-    var dosage by remember { mutableStateOf("") }
-    var selectedPreset by remember { mutableStateOf(FrequencyPreset.BIWEEKLY) }
-    var customNumberText by remember { mutableStateOf("4") }
-    var customUnit by remember { mutableStateOf(CustomUnit.WEEKS) }
-    var deviceType by remember { mutableStateOf(DeviceType.PEN) }
-    var notes by remember { mutableStateOf("") }
+    var name by remember { mutableStateOf(initialMedication?.name ?: "") }
+    var dosage by remember { mutableStateOf(initialMedication?.dosage ?: "") }
+
+    val initialPreset = if (initialMedication != null) {
+        FrequencyPreset.entries.find { it.scheduleType == initialMedication.frequency } ?: FrequencyPreset.CUSTOM
+    } else {
+        FrequencyPreset.BIWEEKLY
+    }
+    var selectedPreset by remember { mutableStateOf(initialPreset) }
+
+    val initialDays = initialMedication?.customIntervalDays ?: 14
+    var customNumberText by remember { 
+        mutableStateOf(
+            if (initialMedication?.frequency == ScheduleType.CUSTOM) {
+                if (initialDays % 30 == 0) (initialDays / 30).toString()
+                else if (initialDays % 7 == 0) (initialDays / 7).toString()
+                else initialDays.toString()
+            } else {
+                "4"
+            }
+        )
+    }
+    var customUnit by remember {
+        mutableStateOf(
+            if (initialDays % 30 == 0) CustomUnit.MONTHS
+            else if (initialDays % 7 == 0) CustomUnit.WEEKS
+            else CustomUnit.DAYS
+        )
+    }
+    var deviceType by remember { mutableStateOf(initialMedication?.deviceType ?: DeviceType.PEN) }
+    var notes by remember { mutableStateOf(initialMedication?.notes ?: "") }
+    var hasLoadingDose by remember { mutableStateOf(false) }
+    var loadingDoseOption by remember { mutableStateOf("Weeks 0, 2, 4 (Standard Biologic Induction)") }
 
     var freqExpanded by remember { mutableStateOf(false) }
     var unitExpanded by remember { mutableStateOf(false) }
@@ -77,13 +105,18 @@ fun MedicationSetupWizardScreen(
 
     val saveAction = {
         if (isFormValid) {
+            val combinedNotes = if (hasLoadingDose) {
+                "Induction Phase: $loadingDoseOption. " + notes.trim()
+            } else {
+                notes.trim()
+            }
             onSaveMedication(
                 name.trim(),
                 dosage.trim(),
                 finalScheduleType,
                 finalIntervalDays,
                 deviceType,
-                notes.ifBlank { null }
+                combinedNotes.ifBlank { null }
             )
         }
     }
@@ -92,7 +125,7 @@ fun MedicationSetupWizardScreen(
         modifier = modifier.fillMaxSize(),
         topBar = {
             TopAppBar(
-                title = { Text("Add Biologic Medication") },
+                title = { Text(if (initialMedication != null) "Edit Biologic Medication" else "Add Biologic Medication") },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(imageVector = Icons.Rounded.ArrowBack, contentDescription = "Back")
@@ -152,7 +185,7 @@ fun MedicationSetupWizardScreen(
             verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
             Text(
-                text = "Medication Setup Wizard",
+                text = if (initialMedication != null) "Edit Medication Details" else "Medication Setup Wizard",
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onBackground
@@ -348,6 +381,59 @@ fun MedicationSetupWizardScreen(
                                 color = MaterialTheme.colorScheme.primary
                             )
                         }
+                    }
+                }
+            }
+
+            // Loading-Dose / Induction Phase Setup Card
+            Card(
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+                ),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(
+                    modifier = Modifier
+                        .padding(16.dp)
+                        .fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(imageVector = Icons.Rounded.Schedule, contentDescription = null, tint = MaterialTheme.colorScheme.secondary)
+                            Text(
+                                text = "Initial Loading Doses (Induction)",
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                        Switch(
+                            checked = hasLoadingDose,
+                            onCheckedChange = { hasLoadingDose = it }
+                        )
+                    }
+
+                    if (hasLoadingDose) {
+                        Text(
+                            text = "Configure initial loading doses before transitioning to your regular maintenance schedule.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        OutlinedTextField(
+                            value = loadingDoseOption,
+                            onValueChange = { loadingDoseOption = it },
+                            label = { Text("Induction / Loading Schedule") },
+                            placeholder = { Text("e.g. Weeks 0, 2, 4 then maintenance") },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true
+                        )
                     }
                 }
             }

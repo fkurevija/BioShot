@@ -19,6 +19,8 @@ import androidx.compose.ui.unit.dp
 import com.fkurevija.bioshot.core.database.InjectionLogEntity
 import com.fkurevija.bioshot.core.database.MedicationEntity
 import com.fkurevija.bioshot.core.database.SymptomEntryEntity
+import com.fkurevija.bioshot.core.notifications.NotificationScheduler
+import com.fkurevija.bioshot.core.schedule.ScheduleEngine
 import com.fkurevija.bioshot.ui.theme.BioShotTheme
 import java.text.SimpleDateFormat
 import java.util.*
@@ -31,9 +33,12 @@ fun DoctorExportAndSettingsScreen(
     symptomEntries: List<SymptomEntryEntity>,
     forceDark: Boolean = false,
     remindersEnabled: Boolean = false,
+    reminderHour: Int = -1,
+    reminderMinute: Int = -1,
     migrationError: String? = null,
     onForceDarkChanged: (Boolean) -> Unit = {},
     onRemindersChanged: (Boolean) -> Unit = {},
+    onReminderTimeChanged: (Int, Int) -> Unit = { _, _ -> },
     onCheckDatabaseErrors: () -> Unit = {},
     onResetDatabase: () -> Unit = {},
     modifier: Modifier = Modifier
@@ -48,7 +53,9 @@ fun DoctorExportAndSettingsScreen(
             sb.append("- ${m.name}: ${m.dosage}, Frequency: ${m.frequency.name}, Device: ${m.deviceType.name}\n")
         }
         sb.append("\n--- INJECTION HISTORY ---\n")
-        val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault())
+        val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault()).apply {
+            timeZone = TimeZone.getDefault()
+        }
         injectionLogs.forEach { l ->
             val dateStr = dateFormat.format(Date(l.timestamp))
             sb.append("- Date: $dateStr | Site: ${l.site.name} | Dosage: ${l.dosageGiven} | Pain: ${l.painLevel ?: 0}/10 | Lot: ${l.lotNumber ?: "N/A"}\n")
@@ -130,6 +137,32 @@ fun DoctorExportAndSettingsScreen(
 
                     Button(
                         onClick = {
+                            val pdfUri = PdfReportExporter.generatePdfReport(context, medications, injectionLogs, symptomEntries)
+                            if (pdfUri != null) {
+                                val sendIntent = Intent().apply {
+                                    action = Intent.ACTION_SEND
+                                    putExtra(Intent.EXTRA_SUBJECT, "BIOSHOT THERAPY & Symptom Report (PDF)")
+                                    putExtra(Intent.EXTRA_STREAM, pdfUri)
+                                    type = "application/pdf"
+                                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                }
+                                val shareIntent = Intent.createChooser(sendIntent, "Share Clinical PDF Report")
+                                context.startActivity(shareIntent)
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary,
+                            contentColor = MaterialTheme.colorScheme.onPrimary
+                        )
+                    ) {
+                        Icon(imageVector = Icons.Rounded.PictureAsPdf, contentDescription = null)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Export Clinical PDF Report (with PK Chart)")
+                    }
+
+                    OutlinedButton(
+                        onClick = {
                             val sendIntent = Intent().apply {
                                 action = Intent.ACTION_SEND
                                 putExtra(Intent.EXTRA_SUBJECT, "BIOSHOT THERAPY & Symptom Report")
@@ -139,15 +172,11 @@ fun DoctorExportAndSettingsScreen(
                             val shareIntent = Intent.createChooser(sendIntent, null)
                             context.startActivity(shareIntent)
                         },
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.primary,
-                            contentColor = MaterialTheme.colorScheme.onPrimary
-                        )
+                        modifier = Modifier.fillMaxWidth()
                     ) {
                         Icon(imageVector = Icons.Rounded.Share, contentDescription = null)
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("Share Report via Email / Apps")
+                        Text("Share Plain Text Report")
                     }
                 }
             }
@@ -180,10 +209,87 @@ fun DoctorExportAndSettingsScreen(
                             Icon(imageVector = Icons.Rounded.Notifications, contentDescription = null, tint = MaterialTheme.colorScheme.secondary)
                             Column {
                                 Text(text = "Injection Reminders", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                                Text(text = "Notify when next dose is due", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                val timeText = if (reminderHour >= 0 && reminderMinute >= 0) {
+                                    String.format(androidx.compose.ui.platform.LocalLocale.current.platformLocale, "Preferred time: %02d:%02d", reminderHour, reminderMinute)
+                                } else {
+                                    "Default time: Derived from last dose"
+                                }
+                                Text(text = timeText, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
                         }
-                        Switch(checked = remindersEnabled, onCheckedChange = onRemindersChanged)
+                        Switch(
+                            checked = remindersEnabled,
+                            onCheckedChange = { enabled ->
+                                onRemindersChanged(enabled)
+                                if (enabled) {
+                                    val med = medications.firstOrNull()
+                                    val log = injectionLogs.firstOrNull()
+                                    if (med != null) {
+                                        val lastTime = log?.timestamp ?: med.createdAt
+                                        val nextDose = ScheduleEngine.calculateNextInjection(
+                                            lastInjectionDate = lastTime,
+                                            scheduleType = med.frequency,
+                                            customIntervalDays = med.customIntervalDays
+                                        ).nextTimestamp
+                                        NotificationScheduler.scheduleReminder(
+                                            context = context,
+                                            nextDoseTimeMs = nextDose,
+                                            medicationName = med.name,
+                                            dosage = med.dosage,
+                                            preferredHour = reminderHour,
+                                            preferredMinute = reminderMinute
+                                        )
+                                    }
+                                } else {
+                                    NotificationScheduler.cancelReminder(context)
+                                }
+                            }
+                        )
+                    }
+
+                    if (remindersEnabled) {
+                        var showTimePicker by remember { mutableStateOf(false) }
+                        if (showTimePicker) {
+                            val timePickerState = rememberTimePickerState(
+                                initialHour = if (reminderHour >= 0) reminderHour else 9,
+                                initialMinute = if (reminderMinute >= 0) reminderMinute else 0,
+                                is24Hour = false
+                            )
+                            AlertDialog(
+                                onDismissRequest = { showTimePicker = false },
+                                title = { Text("Configure Reminder Time") },
+                                text = {
+                                    Box(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        TimePicker(state = timePickerState)
+                                    }
+                                },
+                                confirmButton = {
+                                    TextButton(
+                                        onClick = {
+                                            onReminderTimeChanged(timePickerState.hour, timePickerState.minute)
+                                            showTimePicker = false
+                                        }
+                                    ) {
+                                        Text("Save Time")
+                                    }
+                                },
+                                dismissButton = {
+                                    TextButton(onClick = { showTimePicker = false }) { Text("Cancel") }
+                                }
+                            )
+                        }
+
+                        OutlinedButton(
+                            onClick = { showTimePicker = true },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Icon(imageVector = Icons.Rounded.Schedule, contentDescription = null)
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Set Custom Reminder Time of Day")
+                        }
                     }
 
                     HorizontalDivider()

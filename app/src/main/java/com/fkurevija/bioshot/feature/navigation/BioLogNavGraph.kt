@@ -40,6 +40,7 @@ fun BioShotNavGraph(
     symptomEntries: List<SymptomEntryEntity> = emptyList()
 ) {
     var currentScreen by remember { mutableStateOf<Screen>(Screen.Dashboard) }
+    var editingMedication by remember { mutableStateOf<MedicationEntity?>(null) }
 
     // Collect state with lifecycle so Room database changes persist and update UI instantly
     val viewModelMedications = viewModel.medications.collectAsStateWithLifecycle().value
@@ -95,27 +96,54 @@ fun BioShotNavGraph(
                 is Screen.MedicationList -> {
                     MedicationListScreen(
                         medications = effectiveMedications,
-                        onAddMedicationClick = { currentScreen = Screen.MedicationSetupWizard },
+                        onAddMedicationClick = {
+                            editingMedication = null
+                            currentScreen = Screen.MedicationSetupWizard
+                        },
+                        onEditMedication = { medication ->
+                            editingMedication = medication
+                            currentScreen = Screen.MedicationSetupWizard
+                        },
                         onDeleteMedication = { viewModel.deleteMedication(it) },
                         onNavigateToSettings = { currentScreen = Screen.DoctorExportAndSettings }
                     )
                 }
                 is Screen.MedicationSetupWizard -> {
                     MedicationSetupWizardScreen(
+                        initialMedication = editingMedication,
                         onSaveMedication = { name, dosage, freq, customDays, device, notes ->
-                            viewModel.insertMedication(name, dosage, freq, customDays, device, notes)
+                            val editing = editingMedication
+                            if (editing != null) {
+                                viewModel.updateMedication(
+                                    editing.copy(
+                                        name = name,
+                                        dosage = dosage,
+                                        frequency = freq,
+                                        customIntervalDays = customDays,
+                                        deviceType = device,
+                                        notes = notes
+                                    )
+                                )
+                            } else {
+                                viewModel.insertMedication(name, dosage, freq, customDays, device, notes)
+                            }
+                            editingMedication = null
                             currentScreen = Screen.MedicationList
                         },
-                        onNavigateBack = { currentScreen = Screen.MedicationList }
+                        onNavigateBack = {
+                            editingMedication = null
+                            currentScreen = Screen.MedicationList
+                        }
                     )
                 }
                 is Screen.InjectionLog -> {
                     InjectionLogScreen(
                         medications = effectiveMedications,
                         injectionLogs = effectiveInjectionLogs,
-                        onSaveInjectionLog = { medId, site, dosage, lot, notes, pain, sideEffects ->
-                            viewModel.insertInjectionLog(medId, site, dosage, lot, notes, pain, sideEffects)
+                        onSaveInjectionLog = { medId, site, dosage, lot, notes, pain, sideEffects, timestamp ->
+                            viewModel.insertInjectionLog(medId, site, dosage, lot, notes, pain, sideEffects, timestamp)
                         },
+                        onUpdateInjectionLog = { viewModel.updateInjectionLog(it) },
                         onDeleteInjectionLog = { viewModel.deleteInjectionLog(it) },
                         onNavigateToSettings = { currentScreen = Screen.DoctorExportAndSettings }
                     )

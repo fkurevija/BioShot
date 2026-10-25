@@ -31,7 +31,9 @@ fun TimelineCard(
     item: TimelineItem,
     onDelete: (() -> Unit)? = null
 ) {
-    val dateFormat = SimpleDateFormat("MMM dd, yyyy - HH:mm", androidx.compose.ui.platform.LocalLocale.current.platformLocale)
+    val dateFormat = SimpleDateFormat("MMM dd, yyyy - HH:mm", androidx.compose.ui.platform.LocalLocale.current.platformLocale).apply {
+        timeZone = TimeZone.getDefault()
+    }
     val formattedDate = dateFormat.format(Date(item.timestamp))
 
     val containerColor = when (item.type) {

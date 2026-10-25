@@ -48,7 +48,8 @@ fun DashboardScreen(
         val lastTime = latestLog?.timestamp ?: latestMedication.createdAt
         val res = ScheduleEngine.calculateNextInjection(
             lastInjectionDate = lastTime,
-            scheduleType = latestMedication.frequency
+            scheduleType = latestMedication.frequency,
+            customIntervalDays = latestMedication.customIntervalDays
         )
         res.nextTimestamp
     }

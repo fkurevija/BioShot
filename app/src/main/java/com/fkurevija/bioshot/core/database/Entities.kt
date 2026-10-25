@@ -19,6 +19,28 @@ data class MedicationEntity(
     val createdAt: Long = System.currentTimeMillis()
 )
 
+fun MedicationEntity.getFormattedFrequency(): String {
+    return when (frequency) {
+        ScheduleType.DAILY -> "Daily"
+        ScheduleType.WEEKLY -> "Weekly"
+        ScheduleType.BIWEEKLY -> "Every 2 Weeks"
+        ScheduleType.MONTHLY -> "Monthly"
+        ScheduleType.AS_NEEDED -> "As Needed"
+        ScheduleType.CUSTOM -> {
+            val days = customIntervalDays.coerceAtLeast(1)
+            if (days % 30 == 0) {
+                val months = days / 30
+                "Every $months ${if (months == 1) "Month" else "Months"}"
+            } else if (days % 7 == 0) {
+                val weeks = days / 7
+                "Every $weeks ${if (weeks == 1) "Week" else "Weeks"}"
+            } else {
+                "Every $days ${if (days == 1) "Day" else "Days"}"
+            }
+        }
+    }
+}
+
 @Entity(tableName = "injection_logs")
 data class InjectionLogEntity(
     @PrimaryKey(autoGenerate = true)

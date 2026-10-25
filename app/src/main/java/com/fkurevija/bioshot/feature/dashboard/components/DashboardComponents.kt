@@ -11,6 +11,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.fkurevija.bioshot.core.database.InjectionLogEntity
 import com.fkurevija.bioshot.core.database.MedicationEntity
+import com.fkurevija.bioshot.core.database.getFormattedFrequency
 import com.fkurevija.bioshot.core.model.InjectionSite
 import com.fkurevija.bioshot.core.model.ScheduleType
 import com.fkurevija.bioshot.core.schedule.ScheduleEngine
@@ -79,7 +80,7 @@ fun NextDoseCountdownCard(
                     fontWeight = FontWeight.Bold
                 )
                 Text(
-                    text = "Dosage: " + latestMedication.dosage + " (" + latestMedication.frequency.name + ")",
+                    text = "Dosage: " + latestMedication.dosage + " (" + latestMedication.getFormattedFrequency() + ")",
                     style = MaterialTheme.typography.bodyMedium
                 )
 
@@ -167,7 +168,9 @@ fun LatestInjectionInfoCard(
             }
 
             if (latestLog != null) {
-                val dateFormat = SimpleDateFormat("MMM dd, yyyy - HH:mm", androidx.compose.ui.platform.LocalLocale.current.platformLocale)
+                val dateFormat = SimpleDateFormat("MMM dd, yyyy - HH:mm", androidx.compose.ui.platform.LocalLocale.current.platformLocale).apply {
+                    timeZone = TimeZone.getDefault()
+                }
                 val formattedDate = dateFormat.format(Date(latestLog.timestamp))
 
                 Text(

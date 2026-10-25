@@ -13,6 +13,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.fkurevija.bioshot.core.database.MedicationEntity
+import com.fkurevija.bioshot.core.database.getFormattedFrequency
 import com.fkurevija.bioshot.core.model.DeviceType
 import com.fkurevija.bioshot.core.model.ScheduleType
 import com.fkurevija.bioshot.ui.theme.BioShotTheme
@@ -22,10 +23,38 @@ import com.fkurevija.bioshot.ui.theme.BioShotTheme
 fun MedicationListScreen(
     medications: List<MedicationEntity>,
     onAddMedicationClick: () -> Unit,
+    onEditMedication: (MedicationEntity) -> Unit,
     onDeleteMedication: (MedicationEntity) -> Unit,
     onNavigateToSettings: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    var medicationToDelete by remember { mutableStateOf<MedicationEntity?>(null) }
+
+    // Deletion Confirmation Dialog
+    if (medicationToDelete != null) {
+        AlertDialog(
+            onDismissRequest = { medicationToDelete = null },
+            title = { Text("Delete Medication") },
+            text = { Text("Are you sure you want to delete ${medicationToDelete?.name}? This action cannot be undone.") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        medicationToDelete?.let { onDeleteMedication(it) }
+                        medicationToDelete = null
+                    },
+                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                ) {
+                    Text("Delete")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { medicationToDelete = null }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+
     Scaffold(
         modifier = modifier.fillMaxSize(),
         topBar = {
@@ -91,7 +120,8 @@ fun MedicationListScreen(
                 items(medications) { medication ->
                     MedicationCard(
                         medication = medication,
-                        onDelete = { onDeleteMedication(medication) }
+                        onEdit = { onEditMedication(medication) },
+                        onDelete = { medicationToDelete = medication }
                     )
                 }
             }
@@ -102,6 +132,7 @@ fun MedicationListScreen(
 @Composable
 fun MedicationCard(
     medication: MedicationEntity,
+    onEdit: () -> Unit,
     onDelete: () -> Unit
 ) {
     Card(
@@ -127,12 +158,24 @@ fun MedicationCard(
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold
                 )
-                IconButton(onClick = onDelete) {
-                    Icon(
-                        imageVector = Icons.Rounded.Delete,
-                        contentDescription = "Delete Medication",
-                        tint = MaterialTheme.colorScheme.error
-                    )
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    IconButton(onClick = onEdit) {
+                        Icon(
+                            imageVector = Icons.Rounded.Edit,
+                            contentDescription = "Edit Medication",
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                    IconButton(onClick = onDelete) {
+                        Icon(
+                            imageVector = Icons.Rounded.Delete,
+                            contentDescription = "Delete Medication",
+                            tint = MaterialTheme.colorScheme.error
+                        )
+                    }
                 }
             }
 
@@ -140,7 +183,7 @@ fun MedicationCard(
                 horizontalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 BadgeItem(label = "Dosage", value = medication.dosage)
-                BadgeItem(label = "Frequency", value = medication.frequency.name)
+                BadgeItem(label = "Frequency", value = medication.getFormattedFrequency())
                 BadgeItem(label = "Device", value = medication.deviceType.name.replace("_", " "))
             }
 
@@ -196,6 +239,7 @@ fun MedicationListScreenPreview() {
                 )
             ),
             onAddMedicationClick = {},
+            onEditMedication = {},
             onDeleteMedication = {},
             onNavigateToSettings = {}
         )

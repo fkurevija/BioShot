@@ -13,16 +13,18 @@ import com.fkurevija.bioshot.core.database.InjectionLogEntity
 import com.fkurevija.bioshot.ui.theme.BioShotTheme
 import java.text.SimpleDateFormat
 import java.util.*
-import java.util.concurrent.TimeUnit
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun InjectionLogItemCard(
     log: InjectionLogEntity,
+    onEdit: () -> Unit,
     onDelete: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val dateFormat = SimpleDateFormat("MMM dd, yyyy - HH:mm", androidx.compose.ui.platform.LocalLocale.current.platformLocale)
+    val dateFormat = SimpleDateFormat("MMM dd, yyyy - HH:mm", androidx.compose.ui.platform.LocalLocale.current.platformLocale).apply {
+        timeZone = TimeZone.getDefault()
+    }
     val formattedDate = dateFormat.format(Date(log.timestamp))
 
     Card(
@@ -47,12 +49,24 @@ fun InjectionLogItemCard(
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold
                 )
-                IconButton(onClick = onDelete) {
-                    Icon(
-                        imageVector = Icons.Rounded.Delete,
-                        contentDescription = "Delete Log",
-                        tint = MaterialTheme.colorScheme.error
-                    )
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    IconButton(onClick = onEdit) {
+                        Icon(
+                            imageVector = Icons.Rounded.Edit,
+                            contentDescription = "Edit Log",
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                    IconButton(onClick = onDelete) {
+                        Icon(
+                            imageVector = Icons.Rounded.Delete,
+                            contentDescription = "Delete Log",
+                            tint = MaterialTheme.colorScheme.error
+                        )
+                    }
                 }
             }
 

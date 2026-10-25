@@ -140,11 +140,11 @@ fun SymptomDiaryScreen(
                     }
                 }
             } else {
-                LazyColumn(
+                Column(
                     modifier = Modifier.fillMaxWidth(),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    items(symptomEntries) { entry ->
+                    symptomEntries.forEach { entry ->
                         TimelineCard(
                             item = TimelineItem(
                                 timestamp = entry.timestamp,
@@ -157,7 +157,7 @@ fun SymptomDiaryScreen(
                         )
                     }
 
-                    items(injectionLogs) { log ->
+                    injectionLogs.forEach { log ->
                         val medicationName = medications.firstOrNull { it.id == log.medicationId }?.name ?: "Unknown"
                         TimelineCard(
                             item = TimelineItem(

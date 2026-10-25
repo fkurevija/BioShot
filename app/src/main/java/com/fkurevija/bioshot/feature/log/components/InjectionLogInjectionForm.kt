@@ -1,6 +1,8 @@
 package com.fkurevija.bioshot.feature.log.components
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
+import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -30,11 +32,18 @@ fun InjectionLogInjectionForm(
     onNotesChanged: (String) -> Unit,
     selectedSite: InjectionSite,
     onSiteSelected: (InjectionSite) -> Unit,
+    recentSites: List<InjectionSite>,
+    recommendedSite: InjectionSite,
+    selectedTimestamp: Long,
+    onShowDateTimePicker: () -> Unit,
     onSave: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val dateFormat = SimpleDateFormat("MMM dd, yyyy - HH:mm", androidx.compose.ui.platform.LocalLocale.current.platformLocale)
-    val formattedDate = dateFormat.format(Date())
+    val dateFormat = SimpleDateFormat("MMM dd, yyyy - HH:mm", androidx.compose.ui.platform.LocalLocale.current.platformLocale).apply {
+        timeZone = TimeZone.getDefault()
+    }
+    val formattedDateTime = dateFormat.format(Date(selectedTimestamp))
+    val isRecentSite = recentSites.contains(selectedSite)
 
     Column(
         modifier = modifier.fillMaxWidth(),
@@ -46,6 +55,92 @@ fun InjectionLogInjectionForm(
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onBackground
         )
+
+        // Site Rotation Warning Banner
+        if (isRecentSite) {
+            Card(
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.errorContainer,
+                    contentColor = MaterialTheme.colorScheme.onErrorContainer
+                ),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(
+                    modifier = Modifier
+                        .padding(16.dp)
+                        .fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(imageVector = Icons.Rounded.Warning, contentDescription = "Warning")
+                        Text(
+                            text = "Site Rotation Warning",
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                    Text(
+                        text = "You injected at ${selectedSite.name.replace("_", " ")} within your last 3 injections. Proper site rotation prevents tissue damage and ensures consistent absorption.",
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                    OutlinedButton(
+                        onClick = { onSiteSelected(recommendedSite) },
+                        border = BorderStroke(2.dp, MaterialTheme.colorScheme.onErrorContainer),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            contentColor = MaterialTheme.colorScheme.onErrorContainer
+                        )
+                    ) {
+                        Text("Switch to Recommended (${recommendedSite.name.replace("_", " ")})")
+                    }
+                }
+            }
+        }
+
+        // Date & Time Selector Card
+        OutlinedCard(
+            onClick = onShowDateTimePicker,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Row(
+                modifier = Modifier
+                    .padding(16.dp)
+                    .fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Rounded.Schedule,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                    Column {
+                        Text(
+                            text = "Injection Date & Time",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Text(
+                            text = formattedDateTime,
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                }
+                Icon(
+                    imageVector = Icons.Rounded.Edit,
+                    contentDescription = "Change Date & Time",
+                    tint = MaterialTheme.colorScheme.primary
+                )
+            }
+        }
 
         // Medication selector
         if (medications.isNotEmpty()) {
@@ -130,11 +225,5 @@ fun InjectionLogInjectionForm(
         ) {
             Text("Log Injection")
         }
-
-        Text(
-            text = "Logged: $formattedDate",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
     }
 }
