@@ -20,33 +20,6 @@ import com.fkurevija.bioshot.core.model.DeviceType
 import com.fkurevija.bioshot.core.model.ScheduleType
 import com.fkurevija.bioshot.ui.theme.BioShotTheme
 
-/** Bundled biologic presets shown as quick-select chips. */
-private data class BiologicPreset(val name: String, val defaultDosage: String, val scheduleType: ScheduleType, val defaultDays: Int)
-
-private val BIOLOGIC_PRESETS = listOf(
-    BiologicPreset("Humira (Adalimumab)", "40mg", ScheduleType.BIWEEKLY, 14),
-    BiologicPreset("Enbrel (Etanercept)", "50mg", ScheduleType.WEEKLY, 7),
-    BiologicPreset("Stelara (Ustekinumab)", "45mg", ScheduleType.CUSTOM, 84), // Every 12 weeks
-    BiologicPreset("Cosentyx (Secukinumab)", "300mg", ScheduleType.WEEKLY, 7),
-    BiologicPreset("Dupixent (Dupilumab)", "300mg", ScheduleType.BIWEEKLY, 14),
-    BiologicPreset("Simponi (Golimumab)", "50mg", ScheduleType.CUSTOM, 28), // Every 4 weeks
-)
-
-private enum class FrequencyPreset(val label: String, val scheduleType: ScheduleType, val defaultDays: Int) {
-    DAILY("Daily", ScheduleType.DAILY, 1),
-    WEEKLY("Weekly (Every 7 days)", ScheduleType.WEEKLY, 7),
-    BIWEEKLY("Every 2 Weeks (Biweekly)", ScheduleType.BIWEEKLY, 14),
-    MONTHLY("Monthly", ScheduleType.MONTHLY, 30),
-    AS_NEEDED("As Needed / Manual", ScheduleType.AS_NEEDED, 0),
-    CUSTOM("Custom...", ScheduleType.CUSTOM, 28)
-}
-
-private enum class CustomUnit(val label: String, val daysMultiplier: Int) {
-    DAYS("Days", 1),
-    WEEKS("Weeks", 7),
-    MONTHS("Months", 30)
-}
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MedicationSetupWizardScreen(
