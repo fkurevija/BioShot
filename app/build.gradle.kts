@@ -1,8 +1,11 @@
+import org.gradle.testing.jacoco.tasks.JacocoReport
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.google.devtools.ksp)
     alias(libs.plugins.jetbrains.kotlin.plugin.serialization)
+    jacoco
 }
 
 android {
@@ -22,6 +25,9 @@ android {
     }
 
     buildTypes {
+        debug {
+            enableUnitTestCoverage = true
+        }
         release {
             optimization {
                 enable = true
@@ -94,4 +100,45 @@ dependencies {
 
 ksp {
     arg("room.schemaLocation", "$projectDir/schemas")
+}
+
+tasks.withType<Test> {
+    configure<JacocoTaskExtension> {
+        isIncludeNoLocationClasses = true
+        excludes = listOf("jdk.internal.*")
+    }
+}
+
+tasks.register<JacocoReport>("jacocoTestReport") {
+    dependsOn("testDebugUnitTest")
+
+    reports {
+        xml.required.set(true)
+        html.required.set(true)
+    }
+
+    val fileFilter = listOf(
+        "**/R.class",
+        "**/R$*.class",
+        "**/BuildConfig.*",
+        "**/Manifest*.*",
+        "**/*Test*.*",
+        "android/**/*.*",
+        "**/com/fkurevija/bioshot/ui/**/*.*",
+        "**/com/fkurevija/bioshot/feature/**/*.*"
+    )
+
+    val debugTree = fileTree("${project.layout.buildDirectory.get()}/tmp/kotlin-classes/debug") {
+        exclude(fileFilter)
+    }
+    val javaTree = fileTree("${project.layout.buildDirectory.get()}/intermediates/javac/debug/classes") {
+        exclude(fileFilter)
+    }
+    val mainSrc = "${project.projectDir}/src/main/java"
+
+    classDirectories.setFrom(files(debugTree, javaTree))
+    sourceDirectories.setFrom(files(mainSrc))
+    executionData.setFrom(fileTree(project.layout.buildDirectory.get()) {
+        include("outputs/unit_test_code_coverage/debugUnitTest/testDebugUnitTest.exec", "jacoco/*.exec")
+    })
 }
