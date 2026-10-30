@@ -79,7 +79,6 @@ fun DashboardScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .windowInsetsPadding(WindowInsets.statusBars)
                 .verticalScroll(scrollState)
                 .padding(16.dp)
                 .padding(bottom = 80.dp),

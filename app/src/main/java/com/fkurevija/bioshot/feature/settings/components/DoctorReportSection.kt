@@ -11,8 +11,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.core.content.FileProvider
-import com.fkurevija.bioshot.core.database.DatabaseBackupManager
 import com.fkurevija.bioshot.core.database.InjectionLogEntity
 import com.fkurevija.bioshot.core.database.MedicationEntity
 import com.fkurevija.bioshot.core.database.SymptomEntryEntity
@@ -139,33 +137,6 @@ fun DoctorReportSection(
                     Icon(imageVector = Icons.Rounded.Share, contentDescription = null)
                     Spacer(modifier = Modifier.width(8.dp))
                     Text("Share Plain Text Report")
-                }
-
-                OutlinedButton(
-                    onClick = {
-                        val backupFile = DatabaseBackupManager.createManualBackup(context)
-                        if (backupFile != null) {
-                            val uri = FileProvider.getUriForFile(
-                                context,
-                                "${context.packageName}.fileprovider",
-                                backupFile
-                            )
-                            val sendIntent = Intent().apply {
-                                action = Intent.ACTION_SEND
-                                putExtra(Intent.EXTRA_SUBJECT, "BioShot Database Backup (JSON)")
-                                putExtra(Intent.EXTRA_STREAM, uri)
-                                type = "application/json"
-                                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                            }
-                            val shareIntent = Intent.createChooser(sendIntent, "Export Database Backup")
-                            context.startActivity(shareIntent)
-                        }
-                    },
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Icon(imageVector = Icons.Rounded.Backup, contentDescription = null)
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Backup Database (JSON)")
                 }
             }
         }

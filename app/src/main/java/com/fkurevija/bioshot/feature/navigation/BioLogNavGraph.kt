@@ -77,7 +77,7 @@ fun BioShotNavGraph(
                 }
             }
         }
-    ) { _ ->
+    ) { innerPadding ->
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -95,7 +95,7 @@ fun BioShotNavGraph(
                         onAddWeightLog = { w, unit, fat, waist, notes ->
                             viewModel.insertWeightLog(w, unit, fat, waist, notes)
                         },
-                        innerPadding = PaddingValues(top = 0.dp)
+                        innerPadding = innerPadding
                     )
                 }
                 is Screen.MedicationList -> {
