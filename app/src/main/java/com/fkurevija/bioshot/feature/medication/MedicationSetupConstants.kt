@@ -13,6 +13,13 @@ val BIOLOGIC_PRESETS = listOf(
     BiologicPreset("Simponi (Golimumab)", "50mg", ScheduleType.CUSTOM, 28), // Every 4 weeks
 )
 
+val GLP1_PRESETS = listOf(
+    BiologicPreset("Mounjaro / Zepbound (Tirzepatide)", "2.5mg", ScheduleType.WEEKLY, 7),
+    BiologicPreset("Wegovy / Ozempic (Semaglutide)", "0.25mg", ScheduleType.WEEKLY, 7),
+    BiologicPreset("Retatrutide", "2mg", ScheduleType.WEEKLY, 7),
+    BiologicPreset("Saxenda (Liraglutide)", "0.6mg", ScheduleType.DAILY, 1)
+)
+
 enum class FrequencyPreset(val label: String, val scheduleType: ScheduleType, val defaultDays: Int) {
     DAILY("Daily", ScheduleType.DAILY, 1),
     WEEKLY("Weekly (Every 7 days)", ScheduleType.WEEKLY, 7),
