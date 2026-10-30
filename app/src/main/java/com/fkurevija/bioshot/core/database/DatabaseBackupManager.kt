@@ -33,6 +33,35 @@ object DatabaseBackupManager {
     }
 
     /**
+     * Exports every row from all Room tables into a manual JSON backup file.
+     */
+    fun createManualBackup(context: Context): File? {
+        val dbFile = File(context.filesDir, DB_NAME)
+        if (!dbFile.exists()) return null
+
+        val db = SQLiteDatabase.openDatabase(dbFile.absolutePath, null, SQLiteDatabase.OPEN_READONLY)
+        return try {
+            val backup = buildJsonObject {
+                put("schemaVersion", JsonPrimitive(4))
+                put("backupTimestamp", JsonPrimitive(System.currentTimeMillis()))
+                put("tables", buildJsonObject {
+                    put("medications", exportTable(db, "medications"))
+                    put("injection_logs", exportTable(db, "injection_logs"))
+                    put("symptom_entries", exportTable(db, "symptom_entries"))
+                    put("weight_logs", exportTable(db, "weight_logs"))
+                })
+            }
+
+            val dir = getBackupDir(context)
+            val file = File(dir, "bioshot_manual_backup_${System.currentTimeMillis()}.json")
+            file.writeText(Json.encodeToString(backup))
+            file
+        } finally {
+            db.close()
+        }
+    }
+
+    /**
      * Exports every row from all three Room tables into a single JSON file.
      * Returns the backup file, or null if no existing database exists.
      */
