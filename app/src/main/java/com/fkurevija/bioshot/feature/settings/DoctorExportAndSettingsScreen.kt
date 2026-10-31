@@ -334,6 +334,7 @@ fun DoctorExportAndSettingsScreen(
                             .clickable {
                                 val backupFile = DatabaseBackupManager.createManualBackup(context)
                                 if (backupFile != null) {
+                                    android.widget.Toast.makeText(context, "Backup created successfully!", android.widget.Toast.LENGTH_SHORT).show()
                                     val uri = FileProvider.getUriForFile(
                                         context,
                                         "${context.packageName}.fileprovider",
@@ -341,13 +342,17 @@ fun DoctorExportAndSettingsScreen(
                                     )
                                     val sendIntent = Intent().apply {
                                         action = Intent.ACTION_SEND
-                                        putExtra(Intent.EXTRA_SUBJECT, "BioShot Database Backup (JSON)")
+                                        putExtra(Intent.EXTRA_SUBJECT, "BioShot Data Backup")
                                         putExtra(Intent.EXTRA_STREAM, uri)
                                         type = "application/json"
-                                        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK)
                                     }
-                                    val shareIntent = Intent.createChooser(sendIntent, "Export Database Backup")
+                                    val shareIntent = Intent.createChooser(sendIntent, "Export Data Backup").apply {
+                                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                    }
                                     context.startActivity(shareIntent)
+                                } else {
+                                    android.widget.Toast.makeText(context, "No data to backup yet", android.widget.Toast.LENGTH_SHORT).show()
                                 }
                             }
                             .padding(vertical = 4.dp),
@@ -356,7 +361,8 @@ fun DoctorExportAndSettingsScreen(
                     ) {
                         Row(
                             horizontalArrangement = Arrangement.spacedBy(12.dp),
-                            verticalAlignment = Alignment.CenterVertically
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.weight(1f)
                         ) {
                             Icon(
                                 imageVector = Icons.Rounded.Backup,
@@ -365,12 +371,12 @@ fun DoctorExportAndSettingsScreen(
                             )
                             Column {
                                 Text(
-                                    text = "Backup Database (JSON)",
+                                    text = "Backup Your Data",
                                     style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.Bold
                                 )
                                 Text(
-                                    text = "Export all clinical logs and settings to a JSON file.",
+                                    text = "Save a secure copy of your treatment logs, weight, and history.",
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
