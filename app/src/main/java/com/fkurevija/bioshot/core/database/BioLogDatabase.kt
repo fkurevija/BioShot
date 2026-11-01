@@ -90,9 +90,9 @@ abstract class BioShotDatabase : RoomDatabase() {
         /** Drops the database file and clears the singleton so it can be recreated empty. */
         fun recreateDatabase(context: Context) {
             INSTANCE = null
-            File(context.filesDir, "bioshot_database").delete()
-            File(context.filesDir, "bioshot_database-wal").delete()
-            File(context.filesDir, "bioshot_database-shm").delete()
+            context.getDatabasePath("bioshot_database").delete()
+            context.getDatabasePath("bioshot_database-wal").delete()
+            context.getDatabasePath("bioshot_database-shm").delete()
         }
 
         private val migration1To2 = object : Migration(1, 2) {

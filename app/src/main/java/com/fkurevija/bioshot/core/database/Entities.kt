@@ -5,7 +5,9 @@ import androidx.room.PrimaryKey
 import com.fkurevija.bioshot.core.model.DeviceType
 import com.fkurevija.bioshot.core.model.InjectionSite
 import com.fkurevija.bioshot.core.model.ScheduleType
+import kotlinx.serialization.Serializable
 
+@Serializable
 @Entity(tableName = "medications")
 data class MedicationEntity(
     @PrimaryKey(autoGenerate = true)
@@ -45,6 +47,7 @@ fun MedicationEntity.getFormattedFrequency(): String {
     }
 }
 
+@Serializable
 @Entity(tableName = "injection_logs")
 data class InjectionLogEntity(
     @PrimaryKey(autoGenerate = true)
@@ -59,6 +62,7 @@ data class InjectionLogEntity(
     val sideEffects: List<String> = emptyList()
 )
 
+@Serializable
 @Entity(tableName = "symptom_entries")
 data class SymptomEntryEntity(
     @PrimaryKey(autoGenerate = true)
@@ -70,6 +74,7 @@ data class SymptomEntryEntity(
     val tags: List<String> = emptyList()
 )
 
+@Serializable
 @Entity(tableName = "weight_logs")
 data class WeightLogEntity(
     @PrimaryKey(autoGenerate = true)

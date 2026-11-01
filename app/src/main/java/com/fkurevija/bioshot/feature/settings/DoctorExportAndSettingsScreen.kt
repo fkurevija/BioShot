@@ -25,6 +25,7 @@ import com.fkurevija.bioshot.core.notifications.NotificationScheduler
 import com.fkurevija.bioshot.core.schedule.ScheduleEngine
 import com.fkurevija.bioshot.feature.settings.components.DoctorReportSection
 import com.fkurevija.bioshot.ui.theme.BioShotTheme
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -45,6 +46,7 @@ fun DoctorExportAndSettingsScreen(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
@@ -332,27 +334,29 @@ fun DoctorExportAndSettingsScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clickable {
-                                val backupFile = DatabaseBackupManager.createManualBackup(context)
-                                if (backupFile != null) {
-                                    android.widget.Toast.makeText(context, "Backup created successfully!", android.widget.Toast.LENGTH_SHORT).show()
-                                    val uri = FileProvider.getUriForFile(
-                                        context,
-                                        "${context.packageName}.fileprovider",
-                                        backupFile
-                                    )
-                                    val sendIntent = Intent().apply {
-                                        action = Intent.ACTION_SEND
-                                        putExtra(Intent.EXTRA_SUBJECT, "BioShot Data Backup")
-                                        putExtra(Intent.EXTRA_STREAM, uri)
-                                        type = "application/json"
-                                        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK)
+                                scope.launch {
+                                    val backupFile = DatabaseBackupManager.createManualBackup(context)
+                                    if (backupFile != null) {
+                                        android.widget.Toast.makeText(context, "Backup created successfully!", android.widget.Toast.LENGTH_SHORT).show()
+                                        val uri = FileProvider.getUriForFile(
+                                            context,
+                                            "${context.packageName}.fileprovider",
+                                            backupFile
+                                        )
+                                        val sendIntent = Intent().apply {
+                                            action = Intent.ACTION_SEND
+                                            putExtra(Intent.EXTRA_SUBJECT, "BioShot Data Backup")
+                                            putExtra(Intent.EXTRA_STREAM, uri)
+                                            type = "application/json"
+                                            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK)
+                                        }
+                                        val shareIntent = Intent.createChooser(sendIntent, "Export Data Backup").apply {
+                                            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                        }
+                                        context.startActivity(shareIntent)
+                                    } else {
+                                        android.widget.Toast.makeText(context, "No data to backup yet", android.widget.Toast.LENGTH_SHORT).show()
                                     }
-                                    val shareIntent = Intent.createChooser(sendIntent, "Export Data Backup").apply {
-                                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                                    }
-                                    context.startActivity(shareIntent)
-                                } else {
-                                    android.widget.Toast.makeText(context, "No data to backup yet", android.widget.Toast.LENGTH_SHORT).show()
                                 }
                             }
                             .padding(vertical = 4.dp),

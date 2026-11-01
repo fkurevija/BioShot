@@ -13,6 +13,9 @@ interface MedicationDao {
     @Query("SELECT * FROM medications ORDER BY createdAt DESC")
     fun getAllMedications(): Flow<List<MedicationEntity>>
 
+    @Query("SELECT * FROM medications ORDER BY createdAt DESC")
+    suspend fun getAllMedicationsList(): List<MedicationEntity>
+
     @Query("SELECT * FROM medications WHERE id = :medicationId")
     suspend fun getMedicationById(medicationId: Long): MedicationEntity?
 
@@ -33,6 +36,9 @@ interface MedicationDao {
 interface InjectionLogDao {
     @Query("SELECT * FROM injection_logs ORDER BY timestamp DESC")
     fun getAllInjectionLogs(): Flow<List<InjectionLogEntity>>
+
+    @Query("SELECT * FROM injection_logs ORDER BY timestamp DESC")
+    suspend fun getAllInjectionLogsList(): List<InjectionLogEntity>
 
     @Query("SELECT * FROM injection_logs WHERE medicationId = :medicationId ORDER BY timestamp DESC")
     fun getLogsForMedication(medicationId: Long): Flow<List<InjectionLogEntity>>
@@ -55,6 +61,9 @@ interface SymptomDao {
     @Query("SELECT * FROM symptom_entries ORDER BY timestamp DESC")
     fun getAllSymptomEntries(): Flow<List<SymptomEntryEntity>>
 
+    @Query("SELECT * FROM symptom_entries ORDER BY timestamp DESC")
+    suspend fun getAllSymptomEntriesList(): List<SymptomEntryEntity>
+
     @Query("SELECT * FROM symptom_entries WHERE id = :entryId")
     suspend fun getSymptomEntryById(entryId: Long): SymptomEntryEntity?
 
@@ -72,6 +81,9 @@ interface SymptomDao {
 interface WeightDao {
     @Query("SELECT * FROM weight_logs ORDER BY timestamp DESC")
     fun getAllWeightLogs(): Flow<List<WeightLogEntity>>
+
+    @Query("SELECT * FROM weight_logs ORDER BY timestamp DESC")
+    suspend fun getAllWeightLogsList(): List<WeightLogEntity>
 
     @Query("SELECT * FROM weight_logs WHERE id = :logId")
     suspend fun getWeightLogById(logId: Long): WeightLogEntity?
