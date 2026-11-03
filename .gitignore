@@ -17,3 +17,4 @@ local.properties
 .agent/plan.md
 .artifacts/
 *.artifact.md
+/.agent/.aiexclude
