@@ -1,6 +1,8 @@
 package com.fkurevija.bioshot.feature.settings
 
 import android.content.Intent
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -17,15 +19,26 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
+import com.fkurevija.bioshot.core.database.BioShotDatabase
 import com.fkurevija.bioshot.core.database.DatabaseBackupManager
 import com.fkurevija.bioshot.core.database.InjectionLogEntity
 import com.fkurevija.bioshot.core.database.MedicationEntity
 import com.fkurevija.bioshot.core.database.SymptomEntryEntity
+import com.fkurevija.bioshot.core.database.WeightLogEntity
 import com.fkurevija.bioshot.core.notifications.NotificationScheduler
 import com.fkurevija.bioshot.core.schedule.ScheduleEngine
+import com.fkurevija.bioshot.feature.settings.components.ConflictStrategy
 import com.fkurevija.bioshot.feature.settings.components.DoctorReportSection
+import com.fkurevija.bioshot.feature.settings.components.ImportDataDialog
 import com.fkurevija.bioshot.ui.theme.BioShotTheme
 import kotlinx.coroutines.launch
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.decodeFromJsonElement
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
+import java.io.File
+import java.text.SimpleDateFormat
+import java.util.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -47,6 +60,160 @@ fun DoctorExportAndSettingsScreen(
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
+
+    var pendingBackupFile by remember { mutableStateOf<File?>(null) }
+    var showExportDialog by remember { mutableStateOf(false) }
+    var showImportDialog by remember { mutableStateOf(false) }
+
+    val saveFileLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.CreateDocument("application/json")
+    ) { uri ->
+        if (uri != null && pendingBackupFile != null) {
+            try {
+                context.contentResolver.openOutputStream(uri)?.use { outputStream ->
+                    pendingBackupFile?.inputStream()?.use { inputStream ->
+                        inputStream.copyTo(outputStream)
+                    }
+                }
+                android.widget.Toast.makeText(context, "Backup saved successfully!", android.widget.Toast.LENGTH_SHORT).show()
+            } catch (e: Exception) {
+                e.printStackTrace()
+                android.widget.Toast.makeText(context, "Failed to save backup file", android.widget.Toast.LENGTH_SHORT).show()
+            }
+        }
+        pendingBackupFile = null
+    }
+
+    if (showImportDialog) {
+        ImportDataDialog(
+            onDismiss = { showImportDialog = false },
+            onImportConfirmed = { uri, conflictStrategy ->
+                scope.launch {
+                    try {
+                        val jsonString = context.contentResolver.openInputStream(uri)?.bufferedReader()?.use { it.readText() }
+                        if (!jsonString.isNullOrBlank()) {
+                            val jsonObject = Json.parseToJsonElement(jsonString).jsonObject
+                            val tables = jsonObject["tables"]?.jsonObject
+
+                            val db = BioShotDatabase.getDatabase(context)
+
+                            if (conflictStrategy == ConflictStrategy.OVERWRITE) {
+                                db.medicationDao().getAllMedicationsList().forEach { db.medicationDao().deleteMedication(it) }
+                                db.injectionLogDao().getAllInjectionLogsList().forEach { db.injectionLogDao().deleteInjectionLog(it) }
+                                db.symptomDao().getAllSymptomEntriesList().forEach { db.symptomDao().deleteSymptomEntry(it) }
+                                db.weightDao().getAllWeightLogsList().forEach { db.weightDao().deleteWeightLog(it) }
+                            }
+
+                            tables?.get("medications")?.jsonArray?.forEach { element ->
+                                val med = Json.decodeFromJsonElement<MedicationEntity>(element)
+                                when (conflictStrategy) {
+                                    ConflictStrategy.MERGE -> db.medicationDao().insertMedication(med.copy(id = 0L))
+                                    ConflictStrategy.OVERWRITE -> db.medicationDao().insertMedication(med)
+                                    ConflictStrategy.SKIP -> {
+                                        if (db.medicationDao().getMedicationById(med.id) == null) {
+                                            db.medicationDao().insertMedication(med)
+                                        }
+                                    }
+                                }
+                            }
+                            tables?.get("injection_logs")?.jsonArray?.forEach { element ->
+                                val log = Json.decodeFromJsonElement<InjectionLogEntity>(element)
+                                when (conflictStrategy) {
+                                    ConflictStrategy.MERGE -> db.injectionLogDao().insertInjectionLog(log.copy(id = 0L))
+                                    ConflictStrategy.OVERWRITE -> db.injectionLogDao().insertInjectionLog(log)
+                                    ConflictStrategy.SKIP -> {
+                                        if (db.injectionLogDao().getInjectionLogById(log.id) == null) {
+                                            db.injectionLogDao().insertInjectionLog(log)
+                                        }
+                                    }
+                                }
+                            }
+                            tables?.get("symptom_entries")?.jsonArray?.forEach { element ->
+                                val symptom = Json.decodeFromJsonElement<SymptomEntryEntity>(element)
+                                when (conflictStrategy) {
+                                    ConflictStrategy.MERGE -> db.symptomDao().insertSymptomEntry(symptom.copy(id = 0L))
+                                    ConflictStrategy.OVERWRITE -> db.symptomDao().insertSymptomEntry(symptom)
+                                    ConflictStrategy.SKIP -> {
+                                        if (db.symptomDao().getSymptomEntryById(symptom.id) == null) {
+                                            db.symptomDao().insertSymptomEntry(symptom)
+                                        }
+                                    }
+                                }
+                            }
+                            tables?.get("weight_logs")?.jsonArray?.forEach { element ->
+                                val weight = Json.decodeFromJsonElement<WeightLogEntity>(element)
+                                when (conflictStrategy) {
+                                    ConflictStrategy.MERGE -> db.weightDao().insertWeightLog(weight.copy(id = 0L))
+                                    ConflictStrategy.OVERWRITE -> db.weightDao().insertWeightLog(weight)
+                                    ConflictStrategy.SKIP -> {
+                                        if (db.weightDao().getWeightLogById(weight.id) == null) {
+                                            db.weightDao().insertWeightLog(weight)
+                                        }
+                                    }
+                                }
+                            }
+
+                            android.widget.Toast.makeText(context, "Data imported successfully!", android.widget.Toast.LENGTH_LONG).show()
+                        }
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                        android.widget.Toast.makeText(context, "Import failed: ${e.localizedMessage}", android.widget.Toast.LENGTH_LONG).show()
+                    }
+                }
+            }
+        )
+    }
+
+    if (showExportDialog && pendingBackupFile != null) {
+        AlertDialog(
+            onDismissRequest = {
+                showExportDialog = false
+                pendingBackupFile = null
+            },
+            title = { Text("Export Data Backup") },
+            text = { Text("Choose how you would like to export your BioShot data backup file.") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showExportDialog = false
+                        val backupFile = pendingBackupFile
+                        if (backupFile != null) {
+                            val uri = FileProvider.getUriForFile(
+                                context,
+                                "${context.packageName}.fileprovider",
+                                backupFile
+                            )
+                            val sendIntent = Intent().apply {
+                                action = Intent.ACTION_SEND
+                                putExtra(Intent.EXTRA_SUBJECT, "BioShot Data Backup")
+                                putExtra(Intent.EXTRA_STREAM, uri)
+                                type = "application/json"
+                                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK)
+                            }
+                            val shareIntent = Intent.createChooser(sendIntent, "Export Data Backup").apply {
+                                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                            }
+                            context.startActivity(shareIntent)
+                        }
+                        pendingBackupFile = null
+                    }
+                ) {
+                    Text("Share")
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        showExportDialog = false
+                        val defaultName = "BioShot_Backup_${SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())}.json"
+                        saveFileLauncher.launch(defaultName)
+                    }
+                ) {
+                    Text("Save to Device")
+                }
+            }
+        )
+    }
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
@@ -93,6 +260,7 @@ fun DoctorExportAndSettingsScreen(
                         .fillMaxWidth(),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
+                    // 1. Reminders
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
@@ -190,6 +358,7 @@ fun DoctorExportAndSettingsScreen(
 
                     HorizontalDivider()
 
+                    // 2. Dark Theme
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
@@ -210,25 +379,7 @@ fun DoctorExportAndSettingsScreen(
 
                     HorizontalDivider()
 
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(12.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(imageVector = Icons.Rounded.Info, contentDescription = null, tint = MaterialTheme.colorScheme.secondary)
-                            Column {
-                                Text(text = "About BioShot", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                                Text(text = "Version 1.0.0 • Biologic & Biosimilar Tracker", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            }
-                        }
-                    }
-
-                    HorizontalDivider()
-
+                    // 3. Database Errors Check / Reset
                     var hasChecked by remember { mutableStateOf(false) }
 
                     Row(
@@ -330,6 +481,7 @@ fun DoctorExportAndSettingsScreen(
 
                     HorizontalDivider()
 
+                    // 4. Backup Your Data
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -337,23 +489,8 @@ fun DoctorExportAndSettingsScreen(
                                 scope.launch {
                                     val backupFile = DatabaseBackupManager.createManualBackup(context)
                                     if (backupFile != null) {
-                                        android.widget.Toast.makeText(context, "Backup created successfully!", android.widget.Toast.LENGTH_SHORT).show()
-                                        val uri = FileProvider.getUriForFile(
-                                            context,
-                                            "${context.packageName}.fileprovider",
-                                            backupFile
-                                        )
-                                        val sendIntent = Intent().apply {
-                                            action = Intent.ACTION_SEND
-                                            putExtra(Intent.EXTRA_SUBJECT, "BioShot Data Backup")
-                                            putExtra(Intent.EXTRA_STREAM, uri)
-                                            type = "application/json"
-                                            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK)
-                                        }
-                                        val shareIntent = Intent.createChooser(sendIntent, "Export Data Backup").apply {
-                                            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                                        }
-                                        context.startActivity(shareIntent)
+                                        pendingBackupFile = backupFile
+                                        showExportDialog = true
                                     } else {
                                         android.widget.Toast.makeText(context, "No data to backup yet", android.widget.Toast.LENGTH_SHORT).show()
                                     }
@@ -391,6 +528,69 @@ fun DoctorExportAndSettingsScreen(
                             contentDescription = null,
                             tint = MaterialTheme.colorScheme.onSurfaceVariant
                         )
+                    }
+
+                    HorizontalDivider()
+
+                    // 5. Import My Data
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable {
+                                showImportDialog = true
+                            }
+                            .padding(vertical = 4.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Rounded.Restore,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.secondary
+                            )
+                            Column {
+                                Text(
+                                    text = "Import My Data",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Text(
+                                    text = "Restore your treatment logs and history from a backup file.",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+                        Icon(
+                            imageVector = Icons.Rounded.ChevronRight,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+
+                    HorizontalDivider()
+
+                    // 6. About BioShot (at the bottom)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(imageVector = Icons.Rounded.Info, contentDescription = null, tint = MaterialTheme.colorScheme.secondary)
+                            Column {
+                                Text(text = "About BioShot", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                                Text(text = "Version 1.0.0 • Biologic & Biosimilar Tracker", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                        }
                     }
                 }
             }

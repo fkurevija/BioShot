@@ -14,6 +14,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.fkurevija.bioshot.core.database.InjectionLogEntity
 import com.fkurevija.bioshot.core.database.MedicationEntity
+import com.fkurevija.bioshot.core.model.InjectionSite
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -34,6 +35,7 @@ fun EditInjectionLogDialog(
     var showDatePicker by remember { mutableStateOf(false) }
     var showTimePicker by remember { mutableStateOf(false) }
     var tempDateMillis by remember { mutableStateOf(log.timestamp) }
+    var siteExpanded by remember { mutableStateOf(false) }
 
     val dateFormat = SimpleDateFormat("MMM dd, yyyy - HH:mm", androidx.compose.ui.platform.LocalLocale.current.platformLocale).apply {
         timeZone = TimeZone.getDefault()
@@ -157,6 +159,37 @@ fun EditInjectionLogDialog(
                         }
                         Spacer(modifier = Modifier.width(8.dp))
                         Icon(imageVector = Icons.Rounded.Edit, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                    }
+                }
+
+                // Site (Location) Selector Dropdown
+                ExposedDropdownMenuBox(
+                    expanded = siteExpanded,
+                    onExpandedChange = { siteExpanded = !siteExpanded }
+                ) {
+                    OutlinedTextField(
+                        value = selectedSite.name.replace("_", " "),
+                        onValueChange = {},
+                        readOnly = true,
+                        label = { Text("Injection Site (Location)") },
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = siteExpanded) },
+                        modifier = Modifier
+                            .menuAnchor()
+                            .fillMaxWidth()
+                    )
+                    ExposedDropdownMenu(
+                        expanded = siteExpanded,
+                        onDismissRequest = { siteExpanded = false }
+                    ) {
+                        InjectionSite.entries.forEach { site ->
+                            DropdownMenuItem(
+                                text = { Text(site.name.replace("_", " ")) },
+                                onClick = {
+                                    selectedSite = site
+                                    siteExpanded = false
+                                }
+                            )
+                        }
                     }
                 }
 

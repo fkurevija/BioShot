@@ -29,6 +29,12 @@ import com.fkurevija.bioshot.feature.log.components.InjectionLogItemCard
 import com.fkurevija.bioshot.feature.log.components.EditInjectionLogDialog
 import com.fkurevija.bioshot.ui.theme.BioShotTheme
 
+private fun calculateRecommendedSite(recentLogs: List<InjectionLogEntity>): InjectionSite {
+    val allSites = InjectionSite.entries
+    val recentSiteSet = recentLogs.take(4).map { it.site }.toSet()
+    return allSites.firstOrNull { it !in recentSiteSet } ?: allSites.first()
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun InjectionLogScreen(
@@ -48,6 +54,10 @@ fun InjectionLogScreen(
         if (selectedMedicationId == 0L && medications.isNotEmpty()) {
             selectedMedicationId = medications.first().id
         }
+    }
+
+    val recommendedSite = remember(injectionLogs) {
+        calculateRecommendedSite(injectionLogs)
     }
 
     var dosageInput by remember { mutableStateOf("") }
@@ -129,7 +139,7 @@ fun InjectionLogScreen(
                 selectedSite = selectedSite,
                 onSiteSelected = { selectedSite = it },
                 recentSites = injectionLogs.take(3).map { it.site },
-                recommendedSite = InjectionSite.ABDOMEN_LEFT,
+                recommendedSite = recommendedSite,
                 selectedTimestamp = System.currentTimeMillis(),
                 onShowDateTimePicker = {},
                 onSave = {
