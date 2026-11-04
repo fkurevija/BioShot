@@ -8,9 +8,9 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalLocale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import java.util.*
 
 @Composable
 fun SyringeCalculatorCard(
@@ -21,6 +21,8 @@ fun SyringeCalculatorCard(
     var vialMgText by remember { mutableStateOf("10") }
     var bacWaterMlText by remember { mutableStateOf("2") }
     var desiredMgText by remember { mutableStateOf("2.5") }
+
+    val currentLocale = LocalLocale.current.platformLocale
 
     val vialMg = vialMgText.toDoubleOrNull() ?: 0.0
     val bacWaterMl = bacWaterMlText.toDoubleOrNull() ?: 0.0
@@ -119,7 +121,7 @@ fun SyringeCalculatorCard(
                             color = MaterialTheme.colorScheme.onPrimaryContainer
                         )
                         Text(
-                            text = String.format(Locale.getDefault(), "%.1f Units on U-100 Syringe", calculatedUnits),
+                            text = String.format(currentLocale, "%.1f Units on U-100 Syringe", calculatedUnits),
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.primary
@@ -129,7 +131,7 @@ fun SyringeCalculatorCard(
 
                 Button(
                     onClick = {
-                        onApplyDosage("${desiredMgText}mg (${String.format(Locale.getDefault(), "%.1f", calculatedUnits)} units)")
+                        onApplyDosage("${desiredMgText}mg (${String.format(currentLocale, "%.1f", calculatedUnits)} units)")
                     },
                     modifier = Modifier.fillMaxWidth()
                 ) {
