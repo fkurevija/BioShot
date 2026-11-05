@@ -2,6 +2,7 @@ package com.combustiblelemonlabs.bioshot.feature.dashboard
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Settings
@@ -165,6 +166,7 @@ fun AddWeightDialog(
                     onValueChange = { weightText = it },
                     label = { Text("Weight ($unit)") },
                     singleLine = true,
+                    shape = RoundedCornerShape(12.dp),
                     modifier = Modifier.fillMaxWidth()
                 )
                 Row(
@@ -189,6 +191,7 @@ fun AddWeightDialog(
                     onValueChange = { bodyFatText = it },
                     label = { Text("Body Fat % (Optional)") },
                     singleLine = true,
+                    shape = RoundedCornerShape(12.dp),
                     modifier = Modifier.fillMaxWidth()
                 )
                 OutlinedTextField(
@@ -196,12 +199,14 @@ fun AddWeightDialog(
                     onValueChange = { waistText = it },
                     label = { Text("Waist cm / in (Optional)") },
                     singleLine = true,
+                    shape = RoundedCornerShape(12.dp),
                     modifier = Modifier.fillMaxWidth()
                 )
                 OutlinedTextField(
                     value = notesText,
                     onValueChange = { notesText = it },
                     label = { Text("Notes / Symptoms (Optional)") },
+                    shape = RoundedCornerShape(12.dp),
                     modifier = Modifier.fillMaxWidth()
                 )
             }

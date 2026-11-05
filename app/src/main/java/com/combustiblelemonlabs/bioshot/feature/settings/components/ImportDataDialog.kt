@@ -6,6 +6,7 @@ import android.provider.OpenableColumns
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.*
@@ -123,6 +124,7 @@ fun ImportDataDialog(
                         readOnly = true,
                         label = { Text("Conflict Resolution Strategy") },
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = dropdownExpanded) },
+                        shape = RoundedCornerShape(12.dp),
                         modifier = Modifier
                             .menuAnchor()
                             .fillMaxWidth()

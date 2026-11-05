@@ -2,6 +2,7 @@ package com.combustiblelemonlabs.bioshot.feature.log.components
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.*
@@ -173,6 +174,7 @@ fun EditInjectionLogDialog(
                         readOnly = true,
                         label = { Text("Injection Site (Location)") },
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = siteExpanded) },
+                        shape = RoundedCornerShape(12.dp),
                         modifier = Modifier
                             .menuAnchor()
                             .fillMaxWidth()
@@ -197,12 +199,14 @@ fun EditInjectionLogDialog(
                     value = dosage,
                     onValueChange = { dosage = it },
                     label = { Text("Dosage") },
+                    shape = RoundedCornerShape(12.dp),
                     modifier = Modifier.fillMaxWidth()
                 )
                 OutlinedTextField(
                     value = lotNumber,
                     onValueChange = { lotNumber = it },
                     label = { Text("Lot #") },
+                    shape = RoundedCornerShape(12.dp),
                     modifier = Modifier.fillMaxWidth()
                 )
                 Row(
@@ -225,6 +229,7 @@ fun EditInjectionLogDialog(
                     value = notes,
                     onValueChange = { notes = it },
                     label = { Text("Notes") },
+                    shape = RoundedCornerShape(12.dp),
                     modifier = Modifier.fillMaxWidth(),
                     maxLines = 3
                 )

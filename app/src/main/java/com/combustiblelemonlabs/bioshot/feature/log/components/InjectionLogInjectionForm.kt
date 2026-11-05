@@ -2,6 +2,7 @@ package com.combustiblelemonlabs.bioshot.feature.log.components
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.*
@@ -9,6 +10,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.combustiblelemonlabs.bioshot.core.database.MedicationEntity
 import com.combustiblelemonlabs.bioshot.core.model.InjectionSite
@@ -113,32 +116,27 @@ fun InjectionLogInjectionForm(
             ) {
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.weight(1f)
                 ) {
-                    Icon(
-                        imageVector = Icons.Rounded.Schedule,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary
-                    )
-                    Column {
+                    Icon(imageVector = Icons.Rounded.Schedule, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                    Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = "Injection Date & Time",
-                            style = MaterialTheme.typography.labelMedium,
+                            text = "Date & Time:",
+                            style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Text(
                             text = formattedDateTime,
-                            style = MaterialTheme.typography.bodyLarge,
+                            style = MaterialTheme.typography.bodyMedium,
                             fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurface
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
                         )
                     }
                 }
-                Icon(
-                    imageVector = Icons.Rounded.Edit,
-                    contentDescription = "Change Date & Time",
-                    tint = MaterialTheme.colorScheme.primary
-                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Icon(imageVector = Icons.Rounded.Edit, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
             }
         }
 
@@ -154,6 +152,7 @@ fun InjectionLogInjectionForm(
                     onValueChange = {},
                     readOnly = true,
                     label = { Text("Medication") },
+                    shape = RoundedCornerShape(12.dp),
                     modifier = Modifier.fillMaxWidth()
                 )
                 ExposedDropdownMenu(
@@ -178,12 +177,14 @@ fun InjectionLogInjectionForm(
                 value = dosageGiven,
                 onValueChange = { onDosageChanged(it) },
                 label = { Text("Dosage (e.g. 40mg)") },
+                shape = RoundedCornerShape(12.dp),
                 modifier = Modifier.weight(1f)
             )
             OutlinedTextField(
                 value = lotNumber,
                 onValueChange = { onLotNumberChanged(it) },
                 label = { Text("Lot #") },
+                shape = RoundedCornerShape(12.dp),
                 modifier = Modifier.weight(1f)
             )
         }
@@ -209,6 +210,7 @@ fun InjectionLogInjectionForm(
             value = notes,
             onValueChange = { onNotesChanged(it) },
             label = { Text("Notes (optional)") },
+            shape = RoundedCornerShape(12.dp),
             modifier = Modifier.fillMaxWidth(),
             maxLines = 3
         )
@@ -223,7 +225,36 @@ fun InjectionLogInjectionForm(
                 contentColor = MaterialTheme.colorScheme.onPrimary
             )
         ) {
-            Text("Log Injection")
+            Icon(imageVector = Icons.Rounded.Check, contentDescription = null)
+            Spacer(modifier = Modifier.width(8.dp))
+            Text("Save Injection Log", style = MaterialTheme.typography.titleMedium)
         }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun InjectionLogInjectionFormPreview() {
+    BioShotTheme {
+        InjectionLogInjectionForm(
+            medications = emptyList(),
+            selectedMedicationId = 0L,
+            onMedicationSelected = {},
+            dosageGiven = "40mg",
+            onDosageChanged = {},
+            lotNumber = "LOT123",
+            onLotNumberChanged = {},
+            painLevel = 2f,
+            onPainLevelChanged = {},
+            notes = "Feeling good",
+            onNotesChanged = {},
+            selectedSite = InjectionSite.ABDOMEN_LEFT,
+            onSiteSelected = {},
+            recentSites = emptyList(),
+            recommendedSite = InjectionSite.THIGH_LEFT,
+            selectedTimestamp = System.currentTimeMillis(),
+            onShowDateTimePicker = {},
+            onSave = {}
+        )
     }
 }

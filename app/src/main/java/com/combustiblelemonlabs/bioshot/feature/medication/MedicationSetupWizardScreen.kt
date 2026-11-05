@@ -3,6 +3,7 @@ package com.combustiblelemonlabs.bioshot.feature.medication
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -213,6 +214,7 @@ fun MedicationSetupWizardScreen(
                 onValueChange = { name = it },
                 label = { Text("Medication Name *") },
                 placeholder = { Text("e.g. Humira, Mounjaro (Tirzepatide)") },
+                shape = RoundedCornerShape(12.dp),
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
                 leadingIcon = { Icon(imageVector = Icons.Rounded.Medication, contentDescription = null) }
@@ -222,6 +224,7 @@ fun MedicationSetupWizardScreen(
                 value = dosage,
                 onValueChange = { dosage = it },
                 label = { Text("Dosage * (e.g. 40mg / 2.5mg)") },
+                shape = RoundedCornerShape(12.dp),
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
                 leadingIcon = { Icon(imageVector = Icons.Rounded.Science, contentDescription = null) }
@@ -238,6 +241,7 @@ fun MedicationSetupWizardScreen(
                     readOnly = true,
                     label = { Text("Frequency Schedule *") },
                     trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = freqExpanded) },
+                    shape = RoundedCornerShape(12.dp),
                     modifier = Modifier
                         .menuAnchor()
                         .fillMaxWidth()
@@ -269,6 +273,7 @@ fun MedicationSetupWizardScreen(
                         onValueChange = { customNumberText = it },
                         label = { Text("Every...") },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        shape = RoundedCornerShape(12.dp),
                         modifier = Modifier.weight(1f),
                         singleLine = true
                     )
@@ -282,6 +287,7 @@ fun MedicationSetupWizardScreen(
                             onValueChange = {},
                             readOnly = true,
                             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = unitExpanded) },
+                            shape = RoundedCornerShape(12.dp),
                             modifier = Modifier
                                 .menuAnchor()
                                 .fillMaxWidth()
@@ -315,6 +321,7 @@ fun MedicationSetupWizardScreen(
                     readOnly = true,
                     label = { Text("Delivery Device Type *") },
                     trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = deviceExpanded) },
+                    shape = RoundedCornerShape(12.dp),
                     modifier = Modifier
                         .menuAnchor()
                         .fillMaxWidth()
@@ -375,6 +382,7 @@ fun MedicationSetupWizardScreen(
                 value = notes,
                 onValueChange = { notes = it },
                 label = { Text("Notes / Instructions (Optional)") },
+                shape = RoundedCornerShape(12.dp),
                 modifier = Modifier.fillMaxWidth(),
                 minLines = 3
             )
