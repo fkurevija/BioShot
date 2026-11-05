@@ -9,13 +9,13 @@ plugins {
 }
 
 android {
-    namespace = "com.fkurevija.bioshot"
+    namespace = "com.combustiblelemonlabs.bioshot"
     compileSdk {
         version = release(37)
     }
 
     defaultConfig {
-        applicationId = "com.fkurevija.bioshot"
+        applicationId = "com.combustiblelemonlabs.bioshot"
         minSdk = 26
         targetSdk = 37
         versionCode = 1
@@ -124,8 +124,8 @@ tasks.register<JacocoReport>("jacocoTestReport") {
         "**/Manifest*.*",
         "**/*Test*.*",
         "android/**/*.*",
-        "**/com/fkurevija/bioshot/ui/**/*.*",
-        "**/com/fkurevija/bioshot/feature/**/*.*"
+        "**/com/combustiblelemonlabs/bioshot/ui/**/*.*",
+        "**/com/combustiblelemonlabs/bioshot/feature/**/*.*"
     )
 
     val debugTree = fileTree("${project.layout.buildDirectory.get()}/tmp/kotlin-classes/debug") {

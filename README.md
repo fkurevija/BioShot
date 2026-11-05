@@ -55,7 +55,7 @@ $$C(t) = \frac{F \cdot \text{Dose} \cdot k_a}{V_d \cdot (k_a - k_{el})} \cdot \l
 ## 📁 Project Structure
 
 ```
-com.fkurevija.bioshot/
+com.combustiblelemonlabs.bioshot/
 ├── core/
 │   ├── database/       # Room Entities, DAOs, Repositories, Migrations
 │   ├── model/          # Domain data classes & enums
@@ -78,7 +78,7 @@ com.fkurevija.bioshot/
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/fkurevija/BioShot.git
+   git clone https://github.com/combustiblelemonlabs/BioShot.git
    ```
 2. Open the project in **Android Studio** (Koala / Ladybug or newer).
 3. Build and run on your emulator or physical device:

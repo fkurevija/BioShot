@@ -1,6 +1,6 @@
 {
   "app": {
-    "packageName": "com.fkurevija.bioshot",
+    "packageName": "com.combustiblelemonlabs.bioshot",
     "name": "BioShot",
     "version": {
       "code": 1,
@@ -10,11 +10,11 @@
   "launch": {
     "adb": {
       "description": "Launch BioShot app using ADB on any connected device",
-      "command": "adb shell am start -n com.fkurevija.bioshot/.MainActivity",
+      "command": "adb shell am start -n com.combustiblelemonlabs.bioshot/.MainActivity",
       "alternatives": [
-        "adb shell am start -n com.fkurevija.bioshot/.ui.main.MainActivity",
-        "adb shell am start -n com.fkurevija.bioshot/.ui.SplashScreenActivity",
-        "adb shell am start -n com.fkurevija.bioshot/.SymptomDiaryScreen"
+        "adb shell am start -n com.combustiblelemonlabs.bioshot/.ui.main.MainActivity",
+        "adb shell am start -n com.combustiblelemonlabs.bioshot/.ui.SplashScreenActivity",
+        "adb shell am start -n com.combustiblelemonlabs.bioshot/.SymptomDiaryScreen"
       ]
     },
     "androidStudio": {
@@ -35,5 +35,5 @@
       "start": "adb emulator -avd <avd_name> -memory 2048"
     }
   },
-  "notes": "The main activity may vary. Check AndroidManifest.xml for the exact launchable activity. If the adb command fails, try running 'adb shell pm list activities com.fkurevija.bioshot' to list all exportable activities."
+  "notes": "The main activity may vary. Check AndroidManifest.xml for the exact launchable activity. If the adb command fails, try running 'adb shell pm list activities com.combustiblelemonlabs.bioshot' to list all exportable activities."
 }
