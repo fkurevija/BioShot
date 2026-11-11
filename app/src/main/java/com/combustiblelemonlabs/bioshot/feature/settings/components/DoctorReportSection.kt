@@ -14,6 +14,7 @@ import androidx.compose.ui.unit.dp
 import com.combustiblelemonlabs.bioshot.core.database.InjectionLogEntity
 import com.combustiblelemonlabs.bioshot.core.database.MedicationEntity
 import com.combustiblelemonlabs.bioshot.core.database.SymptomEntryEntity
+import com.combustiblelemonlabs.bioshot.feature.settings.FhirReportExporter
 import com.combustiblelemonlabs.bioshot.feature.settings.PdfReportExporter
 import java.text.SimpleDateFormat
 import java.util.*
@@ -119,6 +120,28 @@ fun DoctorReportSection(
                     Icon(imageVector = Icons.Rounded.PictureAsPdf, contentDescription = null)
                     Spacer(modifier = Modifier.width(8.dp))
                     Text("Export Clinical PDF Report (with PK Chart)")
+                }
+
+                OutlinedButton(
+                    onClick = {
+                        val fhirUri = FhirReportExporter.generateFhirJson(context, medications, injectionLogs, symptomEntries)
+                        if (fhirUri != null) {
+                            val sendIntent = Intent().apply {
+                                action = Intent.ACTION_SEND
+                                putExtra(Intent.EXTRA_SUBJECT, "BIOSHOT HL7 FHIR Clinical Export (JSON)")
+                                putExtra(Intent.EXTRA_STREAM, fhirUri)
+                                type = "application/json"
+                                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                            }
+                            val shareIntent = Intent.createChooser(sendIntent, "Share HL7 FHIR Export")
+                            context.startActivity(shareIntent)
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Icon(imageVector = Icons.Rounded.Code, contentDescription = null)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Export HL7 FHIR (JSON) for EHRs")
                 }
 
                 OutlinedButton(
