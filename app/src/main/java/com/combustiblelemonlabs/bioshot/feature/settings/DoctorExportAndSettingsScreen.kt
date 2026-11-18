@@ -26,6 +26,8 @@ import com.combustiblelemonlabs.bioshot.core.database.MedicationEntity
 import com.combustiblelemonlabs.bioshot.core.database.SymptomEntryEntity
 import com.combustiblelemonlabs.bioshot.core.database.WeightLogEntity
 import com.combustiblelemonlabs.bioshot.core.notifications.NotificationScheduler
+import com.combustiblelemonlabs.bioshot.core.notifications.ReminderInterval
+import com.combustiblelemonlabs.bioshot.core.notifications.ReminderMode
 import com.combustiblelemonlabs.bioshot.core.schedule.ScheduleEngine
 import com.combustiblelemonlabs.bioshot.feature.settings.components.ConflictStrategy
 import com.combustiblelemonlabs.bioshot.feature.settings.components.DoctorReportSection
@@ -48,11 +50,15 @@ fun DoctorExportAndSettingsScreen(
     symptomEntries: List<SymptomEntryEntity>,
     forceDark: Boolean = false,
     remindersEnabled: Boolean = false,
+    reminderMode: ReminderMode = ReminderMode.OFF,
+    reminderIntervals: Set<ReminderInterval> = setOf(ReminderInterval.ONE_DAY_BEFORE),
     reminderHour: Int = -1,
     reminderMinute: Int = -1,
     migrationError: String? = null,
     onForceDarkChanged: (Boolean) -> Unit = {},
     onRemindersChanged: (Boolean) -> Unit = {},
+    onReminderModeChanged: (ReminderMode) -> Unit = {},
+    onReminderIntervalsChanged: (Set<ReminderInterval>) -> Unit = {},
     onReminderTimeChanged: (Int, Int) -> Unit = { _, _ -> },
     onCheckDatabaseErrors: () -> Unit = {},
     onResetDatabase: () -> Unit = {},
@@ -260,99 +266,195 @@ fun DoctorExportAndSettingsScreen(
                         .fillMaxWidth(),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    // 1. Reminders
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
+                    // Helper to reschedule notifications when settings change
+                    fun triggerReschedule(
+                        newMode: ReminderMode,
+                        newIntervals: Set<ReminderInterval>,
+                        newHour: Int = reminderHour,
+                        newMinute: Int = reminderMinute
                     ) {
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(12.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(imageVector = Icons.Rounded.Notifications, contentDescription = null, tint = MaterialTheme.colorScheme.secondary)
-                            Column {
-                                Text(text = "Injection Reminders", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                                val timeText = if (reminderHour >= 0 && reminderMinute >= 0) {
-                                    String.format(androidx.compose.ui.platform.LocalLocale.current.platformLocale, "Preferred time: %02d:%02d", reminderHour, reminderMinute)
-                                } else {
-                                    "Default time: Derived from last dose"
-                                }
-                                Text(text = timeText, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            }
+                        val med = medications.firstOrNull()
+                        val log = injectionLogs.firstOrNull()
+                        if (med != null && newMode != ReminderMode.OFF) {
+                            val lastTime = log?.timestamp ?: med.createdAt
+                            val nextDose = ScheduleEngine.calculateNextInjection(
+                                lastInjectionDate = lastTime,
+                                scheduleType = med.frequency,
+                                customIntervalDays = med.customIntervalDays
+                            ).nextTimestamp
+                            NotificationScheduler.scheduleReminders(
+                                context = context,
+                                nextDoseTimeMs = nextDose,
+                                medicationName = med.name,
+                                dosage = med.dosage,
+                                reminderMode = newMode,
+                                reminderIntervals = newIntervals,
+                                preferredHour = newHour,
+                                preferredMinute = newMinute
+                            )
+                        } else {
+                            NotificationScheduler.cancelReminders(context)
                         }
-                        Switch(
-                            checked = remindersEnabled,
-                            onCheckedChange = { enabled ->
-                                onRemindersChanged(enabled)
-                                if (enabled) {
-                                    val med = medications.firstOrNull()
-                                    val log = injectionLogs.firstOrNull()
-                                    if (med != null) {
-                                        val lastTime = log?.timestamp ?: med.createdAt
-                                        val nextDose = ScheduleEngine.calculateNextInjection(
-                                            lastInjectionDate = lastTime,
-                                            scheduleType = med.frequency,
-                                            customIntervalDays = med.customIntervalDays
-                                        ).nextTimestamp
-                                        NotificationScheduler.scheduleReminder(
-                                            context = context,
-                                            nextDoseTimeMs = nextDose,
-                                            medicationName = med.name,
-                                            dosage = med.dosage,
-                                            preferredHour = reminderHour,
-                                            preferredMinute = reminderMinute
-                                        )
-                                    }
-                                } else {
-                                    NotificationScheduler.cancelReminder(context)
-                                }
-                            }
-                        )
                     }
 
-                    if (remindersEnabled) {
-                        var showTimePicker by remember { mutableStateOf(false) }
-                        if (showTimePicker) {
-                            val timePickerState = rememberTimePickerState(
-                                initialHour = if (reminderHour >= 0) reminderHour else 9,
-                                initialMinute = if (reminderMinute >= 0) reminderMinute else 0,
-                                is24Hour = false
-                            )
-                            AlertDialog(
-                                onDismissRequest = { showTimePicker = false },
-                                title = { Text("Configure Reminder Time") },
-                                text = {
-                                    Box(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        TimePicker(state = timePickerState)
+                    // 1. Reminders Section
+                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Rounded.Notifications,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.secondary
+                                )
+                                Column {
+                                    Text(
+                                        text = "Push Notification Reminders",
+                                        style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                    val timeText = if (reminderHour >= 0 && reminderMinute >= 0) {
+                                        String.format(
+                                            androidx.compose.ui.platform.LocalLocale.current.platformLocale,
+                                            "Preferred time: %02d:%02d",
+                                            reminderHour,
+                                            reminderMinute
+                                        )
+                                    } else {
+                                        "Default time: Derived from last dose"
                                     }
-                                },
-                                confirmButton = {
-                                    TextButton(
-                                        onClick = {
-                                            onReminderTimeChanged(timePickerState.hour, timePickerState.minute)
-                                            showTimePicker = false
-                                        }
-                                    ) {
-                                        Text("Save Time")
-                                    }
-                                },
-                                dismissButton = {
-                                    TextButton(onClick = { showTimePicker = false }) { Text("Cancel") }
+                                    Text(
+                                        text = timeText,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
                                 }
+                            }
+                        }
+
+                        // Mode Selector Chips (Off / Single / Multiple)
+                        Text(
+                            text = "Reminder Mode",
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            FilterChip(
+                                selected = reminderMode == ReminderMode.OFF,
+                                onClick = {
+                                    onReminderModeChanged(ReminderMode.OFF)
+                                    onRemindersChanged(false)
+                                    triggerReschedule(ReminderMode.OFF, reminderIntervals)
+                                },
+                                label = { Text("Off") }
+                            )
+                            FilterChip(
+                                selected = reminderMode == ReminderMode.SINGLE,
+                                onClick = {
+                                    onReminderModeChanged(ReminderMode.SINGLE)
+                                    onRemindersChanged(true)
+                                    triggerReschedule(ReminderMode.SINGLE, reminderIntervals)
+                                },
+                                label = { Text("Single Notification") }
+                            )
+                            FilterChip(
+                                selected = reminderMode == ReminderMode.MULTIPLE,
+                                onClick = {
+                                    onReminderModeChanged(ReminderMode.MULTIPLE)
+                                    onRemindersChanged(true)
+                                    triggerReschedule(ReminderMode.MULTIPLE, reminderIntervals)
+                                },
+                                label = { Text("Multiple Reminders") }
                             )
                         }
 
-                        OutlinedButton(
-                            onClick = { showTimePicker = true },
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Icon(imageVector = Icons.Rounded.Schedule, contentDescription = null)
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text("Set Custom Reminder Time of Day")
+                        if (reminderMode != ReminderMode.OFF) {
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = if (reminderMode == ReminderMode.SINGLE) "Select Notification Timing" else "Select All Notification Timing Intervals",
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.Bold
+                            )
+
+                            // Interval Chips
+                            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                ReminderInterval.entries.forEach { interval ->
+                                    val isSelected = reminderIntervals.contains(interval)
+                                    FilterChip(
+                                        selected = isSelected,
+                                        onClick = {
+                                            val newIntervals = if (reminderMode == ReminderMode.SINGLE) {
+                                                setOf(interval)
+                                            } else {
+                                                if (isSelected && reminderIntervals.size > 1) {
+                                                    reminderIntervals - interval
+                                                } else {
+                                                    reminderIntervals + interval
+                                                }
+                                            }
+                                            onReminderIntervalsChanged(newIntervals)
+                                            triggerReschedule(reminderMode, newIntervals)
+                                        },
+                                        label = { Text(interval.label) },
+                                        leadingIcon = if (isSelected) {
+                                            { Icon(Icons.Rounded.Check, contentDescription = null, modifier = Modifier.size(16.dp)) }
+                                        } else null
+                                    )
+                                }
+                            }
+
+                            var showTimePicker by remember { mutableStateOf(false) }
+                            if (showTimePicker) {
+                                val timePickerState = rememberTimePickerState(
+                                    initialHour = if (reminderHour >= 0) reminderHour else 9,
+                                    initialMinute = if (reminderMinute >= 0) reminderMinute else 0,
+                                    is24Hour = false
+                                )
+                                AlertDialog(
+                                    onDismissRequest = { showTimePicker = false },
+                                    title = { Text("Configure Reminder Time") },
+                                    text = {
+                                        Box(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            TimePicker(state = timePickerState)
+                                        }
+                                    },
+                                    confirmButton = {
+                                        TextButton(
+                                            onClick = {
+                                                onReminderTimeChanged(timePickerState.hour, timePickerState.minute)
+                                                triggerReschedule(reminderMode, reminderIntervals, timePickerState.hour, timePickerState.minute)
+                                                showTimePicker = false
+                                            }
+                                        ) {
+                                            Text("Save Time")
+                                        }
+                                    },
+                                    dismissButton = {
+                                        TextButton(onClick = { showTimePicker = false }) { Text("Cancel") }
+                                    }
+                                )
+                            }
+
+                            OutlinedButton(
+                                onClick = { showTimePicker = true },
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Icon(imageVector = Icons.Rounded.Schedule, contentDescription = null)
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text("Set Custom Reminder Time of Day")
+                            }
                         }
                     }
 
