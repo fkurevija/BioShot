@@ -28,6 +28,8 @@ import com.combustiblelemonlabs.bioshot.feature.log.components.InjectionLogInjec
 import com.combustiblelemonlabs.bioshot.feature.log.components.InjectionLogItemCard
 import com.combustiblelemonlabs.bioshot.feature.log.components.EditInjectionLogDialog
 import com.combustiblelemonlabs.bioshot.ui.theme.BioShotTheme
+import java.util.Calendar
+import java.util.TimeZone
 
 private fun calculateRecommendedSite(recentLogs: List<InjectionLogEntity>): InjectionSite {
     val allSites = InjectionSite.entries
@@ -65,7 +67,81 @@ fun InjectionLogScreen(
     var notesInput by remember { mutableStateOf("") }
     var painLevelInput by remember { mutableStateOf(1f) }
 
+    var selectedTimestamp by remember { mutableStateOf(System.currentTimeMillis()) }
+    var showDatePicker by remember { mutableStateOf(false) }
+    var showTimePicker by remember { mutableStateOf(false) }
+    var tempDateMillis by remember { mutableStateOf(System.currentTimeMillis()) }
+
     var logToEdit by remember { mutableStateOf<InjectionLogEntity?>(null) }
+
+    if (showDatePicker) {
+        val datePickerState = rememberDatePickerState(initialSelectedDateMillis = selectedTimestamp)
+        DatePickerDialog(
+            onDismissRequest = { showDatePicker = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    datePickerState.selectedDateMillis?.let { millis ->
+                        val utcCal = Calendar.getInstance(TimeZone.getTimeZone("UTC")).apply {
+                            timeInMillis = millis
+                        }
+                        val localCal = Calendar.getInstance(TimeZone.getDefault()).apply {
+                            timeInMillis = selectedTimestamp
+                            set(Calendar.YEAR, utcCal.get(Calendar.YEAR))
+                            set(Calendar.MONTH, utcCal.get(Calendar.MONTH))
+                            set(Calendar.DAY_OF_MONTH, utcCal.get(Calendar.DAY_OF_MONTH))
+                        }
+                        tempDateMillis = localCal.timeInMillis
+                    }
+                    showDatePicker = false
+                    showTimePicker = true
+                }) { Text("Next (Time)") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDatePicker = false }) { Text("Cancel") }
+            }
+        ) {
+            DatePicker(state = datePickerState)
+        }
+    }
+
+    if (showTimePicker) {
+        val cal = Calendar.getInstance(TimeZone.getDefault()).apply { timeInMillis = selectedTimestamp }
+        val timePickerState = rememberTimePickerState(
+            initialHour = cal.get(Calendar.HOUR_OF_DAY),
+            initialMinute = cal.get(Calendar.MINUTE),
+            is24Hour = false
+        )
+        AlertDialog(
+            onDismissRequest = { showTimePicker = false },
+            title = { Text("Select Injection Time") },
+            text = {
+                Box(
+                    modifier = Modifier.fillMaxWidth(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    TimePicker(state = timePickerState)
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        val calendar = Calendar.getInstance(TimeZone.getDefault()).apply {
+                            timeInMillis = tempDateMillis
+                            set(Calendar.HOUR_OF_DAY, timePickerState.hour)
+                            set(Calendar.MINUTE, timePickerState.minute)
+                            set(Calendar.SECOND, 0)
+                            set(Calendar.MILLISECOND, 0)
+                        }
+                        selectedTimestamp = calendar.timeInMillis
+                        showTimePicker = false
+                    }
+                ) { Text("OK") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showTimePicker = false }) { Text("Cancel") }
+            }
+        )
+    }
 
     if (logToEdit != null) {
         EditInjectionLogDialog(
@@ -140,8 +216,8 @@ fun InjectionLogScreen(
                 onSiteSelected = { selectedSite = it },
                 recentSites = injectionLogs.take(3).map { it.site },
                 recommendedSite = recommendedSite,
-                selectedTimestamp = System.currentTimeMillis(),
-                onShowDateTimePicker = {},
+                selectedTimestamp = selectedTimestamp,
+                onShowDateTimePicker = { showDatePicker = true },
                 onSave = {
                     if (selectedMedicationId != 0L) {
                         val med = medications.find { it.id == selectedMedicationId }
@@ -153,11 +229,12 @@ fun InjectionLogScreen(
                             notesInput.ifBlank { null },
                             painLevelInput.toInt(),
                             emptyList(),
-                            System.currentTimeMillis()
+                            selectedTimestamp
                         )
                         dosageInput = ""
                         lotNumberInput = ""
                         notesInput = ""
+                        selectedTimestamp = System.currentTimeMillis()
                     }
                 }
             )
