@@ -6,13 +6,13 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
-import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.preferencesDataStore
-import com.combustiblelemonlabs.bioshot.core.notifications.ReminderInterval
-import com.combustiblelemonlabs.bioshot.core.notifications.ReminderMode
+import com.combustiblelemonlabs.bioshot.core.notifications.CustomReminder
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 
 private val Context.bioshotDataStore: DataStore<Preferences> by preferencesDataStore(name = "bioshot_settings")
 
@@ -25,8 +25,7 @@ class SettingsRepository(private val context: Context) {
 
     private val forceDarkKey = booleanPreferencesKey("forceDark")
     private val remindersEnabledKey = booleanPreferencesKey("remindersEnabled")
-    private val reminderModeKey = stringPreferencesKey("reminderMode")
-    private val reminderIntervalsKey = stringSetPreferencesKey("reminderIntervals")
+    private val customRemindersListKey = stringPreferencesKey("customRemindersList")
     private val reminderHourKey = intPreferencesKey("reminderHour")
     private val reminderMinuteKey = intPreferencesKey("reminderMinute")
 
@@ -35,35 +34,19 @@ class SettingsRepository(private val context: Context) {
     }
 
     val remindersEnabled: Flow<Boolean> = dataStore.data.map { prefs: Preferences ->
-        val legacyEnabled = prefs[remindersEnabledKey] ?: false
-        val modeStr = prefs[reminderModeKey]
-        if (modeStr != null) {
-            modeStr != ReminderMode.OFF.name
-        } else {
-            legacyEnabled
-        }
+        prefs[remindersEnabledKey] ?: false
     }
 
-    val reminderMode: Flow<ReminderMode> = dataStore.data.map { prefs: Preferences ->
-        val modeStr = prefs[reminderModeKey]
-        if (modeStr != null) {
+    val customReminders: Flow<List<CustomReminder>> = dataStore.data.map { prefs: Preferences ->
+        val jsonStr = prefs[customRemindersListKey]
+        if (!jsonStr.isNullOrBlank()) {
             try {
-                ReminderMode.valueOf(modeStr)
+                Json.decodeFromString<List<CustomReminder>>(jsonStr)
             } catch (e: Exception) {
-                ReminderMode.OFF
+                CustomReminder.DEFAULT_REMINDERS
             }
         } else {
-            val legacyEnabled = prefs[remindersEnabledKey] ?: false
-            if (legacyEnabled) ReminderMode.SINGLE else ReminderMode.OFF
-        }
-    }
-
-    val reminderIntervals: Flow<Set<ReminderInterval>> = dataStore.data.map { prefs: Preferences ->
-        val setStrings = prefs[reminderIntervalsKey]
-        if (setStrings != null) {
-            setStrings.mapNotNull { ReminderInterval.fromName(it) }.toSet()
-        } else {
-            setOf(ReminderInterval.ONE_DAY_BEFORE)
+            CustomReminder.DEFAULT_REMINDERS
         }
     }
 
@@ -84,20 +67,13 @@ class SettingsRepository(private val context: Context) {
     suspend fun setRemindersEnabled(enabled: Boolean) {
         dataStore.edit { prefs ->
             prefs[remindersEnabledKey] = enabled
-            prefs[reminderModeKey] = if (enabled) ReminderMode.SINGLE.name else ReminderMode.OFF.name
         }
     }
 
-    suspend fun setReminderMode(mode: ReminderMode) {
+    suspend fun setCustomReminders(reminders: List<CustomReminder>) {
         dataStore.edit { prefs ->
-            prefs[reminderModeKey] = mode.name
-            prefs[remindersEnabledKey] = (mode != ReminderMode.OFF)
-        }
-    }
-
-    suspend fun setReminderIntervals(intervals: Set<ReminderInterval>) {
-        dataStore.edit { prefs ->
-            prefs[reminderIntervalsKey] = intervals.map { it.name }.toSet()
+            val jsonStr = Json.encodeToString(reminders)
+            prefs[customRemindersListKey] = jsonStr
         }
     }
 

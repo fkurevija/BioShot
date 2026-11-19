@@ -19,35 +19,19 @@ object NotificationScheduler {
         nextDoseTimeMs: Long,
         medicationName: String,
         dosage: String,
-        reminderMode: ReminderMode,
-        reminderIntervals: Set<ReminderInterval>,
+        remindersEnabled: Boolean,
+        reminders: List<CustomReminder>,
         preferredHour: Int = -1,
         preferredMinute: Int = -1
     ) {
         cancelReminders(context)
 
-        if (reminderMode == ReminderMode.OFF) return
+        if (!remindersEnabled || reminders.isEmpty()) return
 
-        val activeIntervals = when (reminderMode) {
-            ReminderMode.SINGLE -> {
-                val single = reminderIntervals.firstOrNull() ?: ReminderInterval.ONE_DAY_BEFORE
-                setOf(single)
-            }
-            ReminderMode.MULTIPLE -> {
-                if (reminderIntervals.isEmpty()) {
-                    setOf(ReminderInterval.ONE_DAY_BEFORE, ReminderInterval.AT_TIME_OF_INJECTION)
-                } else {
-                    reminderIntervals
-                }
-            }
-            ReminderMode.OFF -> emptySet()
-        }
-
-        activeIntervals.forEach { interval ->
-            val baseTimestamp = nextDoseTimeMs - (interval.offsetDays * 24 * 60 * 60 * 1000L)
+        reminders.forEachIndexed { index, reminder ->
             val targetCalendar = Calendar.getInstance(TimeZone.getDefault()).apply {
-                timeInMillis = baseTimestamp
-                if (preferredHour >= 0 && preferredMinute >= 0) {
+                timeInMillis = nextDoseTimeMs - reminder.offsetMs
+                if ((reminder.unit == ReminderUnit.DAYS || reminder.unit == ReminderUnit.WEEKS) && preferredHour >= 0 && preferredMinute >= 0) {
                     set(Calendar.HOUR_OF_DAY, preferredHour)
                     set(Calendar.MINUTE, preferredMinute)
                     set(Calendar.SECOND, 0)
@@ -60,8 +44,8 @@ object NotificationScheduler {
                 val inputData = Data.Builder()
                     .putString("medicationName", medicationName)
                     .putString("dosage", dosage)
-                    .putString("reminderLabel", interval.reminderLabel)
-                    .putInt("notificationId", 1000 + interval.ordinal)
+                    .putString("reminderLabel", reminder.getNotificationTextLabel())
+                    .putInt("notificationId", 1000 + index)
                     .build()
 
                 val workRequest = OneTimeWorkRequestBuilder<InjectionReminderWorker>()
@@ -69,7 +53,7 @@ object NotificationScheduler {
                     .setInputData(inputData)
                     .build()
 
-                val uniqueName = "$WORK_PREFIX${interval.name}"
+                val uniqueName = "$WORK_PREFIX${reminder.id}"
                 WorkManager.getInstance(context).enqueueUniqueWork(
                     uniqueName,
                     ExistingWorkPolicy.REPLACE,
@@ -79,6 +63,7 @@ object NotificationScheduler {
         }
     }
 
+    /** Legacy single reminder adapter for backwards compatibility. */
     fun scheduleReminder(
         context: Context,
         nextDoseTimeMs: Long,
@@ -92,8 +77,8 @@ object NotificationScheduler {
             nextDoseTimeMs = nextDoseTimeMs,
             medicationName = medicationName,
             dosage = dosage,
-            reminderMode = ReminderMode.SINGLE,
-            reminderIntervals = setOf(ReminderInterval.ONE_DAY_BEFORE),
+            remindersEnabled = true,
+            reminders = CustomReminder.DEFAULT_REMINDERS,
             preferredHour = preferredHour,
             preferredMinute = preferredMinute
         )
@@ -102,9 +87,7 @@ object NotificationScheduler {
     fun cancelReminders(context: Context) {
         val workManager = WorkManager.getInstance(context)
         workManager.cancelUniqueWork(LEGACY_WORK_NAME)
-        ReminderInterval.entries.forEach { interval ->
-            workManager.cancelUniqueWork("$WORK_PREFIX${interval.name}")
-        }
+        workManager.cancelAllWorkByTag(WORK_PREFIX)
     }
 
     fun cancelReminder(context: Context) {

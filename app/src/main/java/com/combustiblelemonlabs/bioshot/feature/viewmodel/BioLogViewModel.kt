@@ -21,8 +21,7 @@ import com.combustiblelemonlabs.bioshot.core.database.WeightRepository
 import com.combustiblelemonlabs.bioshot.core.model.DeviceType
 import com.combustiblelemonlabs.bioshot.core.model.InjectionSite
 import com.combustiblelemonlabs.bioshot.core.model.ScheduleType
-import com.combustiblelemonlabs.bioshot.core.notifications.ReminderInterval
-import com.combustiblelemonlabs.bioshot.core.notifications.ReminderMode
+import com.combustiblelemonlabs.bioshot.core.notifications.CustomReminder
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -93,10 +92,8 @@ class BioShotViewModel(application: Application) : AndroidViewModel(application)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
     val remindersEnabled: StateFlow<Boolean> = settingsRepository.remindersEnabled
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
-    val reminderMode: StateFlow<ReminderMode> = settingsRepository.reminderMode
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), ReminderMode.OFF)
-    val reminderIntervals: StateFlow<Set<ReminderInterval>> = settingsRepository.reminderIntervals
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), setOf(ReminderInterval.ONE_DAY_BEFORE))
+    val customReminders: StateFlow<List<CustomReminder>> = settingsRepository.customReminders
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), CustomReminder.DEFAULT_REMINDERS)
     val reminderHour: StateFlow<Int> = settingsRepository.reminderHour
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), -1)
     val reminderMinute: StateFlow<Int> = settingsRepository.reminderMinute
@@ -110,12 +107,8 @@ class BioShotViewModel(application: Application) : AndroidViewModel(application)
         viewModelScope.launch { settingsRepository.setRemindersEnabled(enabled) }
     }
 
-    fun setReminderMode(mode: ReminderMode) {
-        viewModelScope.launch { settingsRepository.setReminderMode(mode) }
-    }
-
-    fun setReminderIntervals(intervals: Set<ReminderInterval>) {
-        viewModelScope.launch { settingsRepository.setReminderIntervals(intervals) }
+    fun setCustomReminders(reminders: List<CustomReminder>) {
+        viewModelScope.launch { settingsRepository.setCustomReminders(reminders) }
     }
 
     fun setReminderTime(hour: Int, minute: Int) {

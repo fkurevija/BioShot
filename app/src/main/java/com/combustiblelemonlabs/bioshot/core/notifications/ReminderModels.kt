@@ -1,40 +1,49 @@
 package com.combustiblelemonlabs.bioshot.core.notifications
 
-enum class ReminderMode {
-    OFF,
-    SINGLE,
-    MULTIPLE
+import kotlinx.serialization.Serializable
+import java.util.UUID
+
+@Serializable
+enum class ReminderUnit(val labelSingular: String, val labelPlural: String) {
+    MINUTES("minute", "minutes"),
+    HOURS("hour", "hours"),
+    DAYS("day", "days"),
+    WEEKS("week", "weeks")
 }
 
-enum class ReminderInterval(
-    val label: String,
-    val offsetDays: Long,
-    val reminderLabel: String,
-    val defaultForSingle: Boolean = false
+@Serializable
+data class CustomReminder(
+    val id: String = UUID.randomUUID().toString(),
+    val amount: Int,
+    val unit: ReminderUnit
 ) {
-    ONE_WEEK_BEFORE(
-        label = "1 week before",
-        offsetDays = 7L,
-        reminderLabel = "is due in 1 week"
-    ),
-    THREE_DAYS_BEFORE(
-        label = "3 days before",
-        offsetDays = 3L,
-        reminderLabel = "is due in 3 days"
-    ),
-    ONE_DAY_BEFORE(
-        label = "1 day before",
-        offsetDays = 1L,
-        reminderLabel = "is due tomorrow",
-        defaultForSingle = true
-    ),
-    AT_TIME_OF_INJECTION(
-        label = "At time of injection",
-        offsetDays = 0L,
-        reminderLabel = "is due today"
-    );
+    val offsetMs: Long
+        get() = when (unit) {
+            ReminderUnit.MINUTES -> amount * 60 * 1000L
+            ReminderUnit.HOURS -> amount * 3600 * 1000L
+            ReminderUnit.DAYS -> amount * 86400 * 1000L
+            ReminderUnit.WEEKS -> amount * 7 * 86400 * 1000L
+        }
+
+    fun getFormattedLabel(): String {
+        if (amount == 0) return "At time of injection"
+        val unitStr = if (amount == 1) unit.labelSingular else unit.labelPlural
+        return "$amount $unitStr before"
+    }
+
+    fun getNotificationTextLabel(): String {
+        if (amount == 0) return "is due now"
+        val unitStr = if (amount == 1) unit.labelSingular else unit.labelPlural
+        return when (unit) {
+            ReminderUnit.DAYS -> if (amount == 1) "is due tomorrow" else "is due in $amount days"
+            else -> "is due in $amount $unitStr"
+        }
+    }
 
     companion object {
-        fun fromName(name: String): ReminderInterval? = entries.find { it.name == name }
+        val DEFAULT_REMINDERS = listOf(
+            CustomReminder(id = "default_1d", amount = 1, unit = ReminderUnit.DAYS),
+            CustomReminder(id = "default_1w", amount = 1, unit = ReminderUnit.WEEKS)
+        )
     }
 }
