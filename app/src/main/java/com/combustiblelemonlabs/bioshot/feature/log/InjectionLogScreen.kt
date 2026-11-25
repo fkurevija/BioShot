@@ -1,28 +1,20 @@
 package com.combustiblelemonlabs.bioshot.feature.log
 
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Settings
-import androidx.compose.material.icons.rounded.Check
-import androidx.compose.material.icons.rounded.Schedule
-import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.combustiblelemonlabs.bioshot.core.database.InjectionLogEntity
 import com.combustiblelemonlabs.bioshot.core.database.MedicationEntity
 import com.combustiblelemonlabs.bioshot.core.model.InjectionSite
-import com.combustiblelemonlabs.bioshot.core.model.ScheduleType
-import com.combustiblelemonlabs.bioshot.core.model.DeviceType
 import com.combustiblelemonlabs.bioshot.feature.log.components.InjectionLogBodyMap
 import com.combustiblelemonlabs.bioshot.feature.log.components.InjectionLogInjectionForm
 import com.combustiblelemonlabs.bioshot.feature.log.components.InjectionLogItemCard
@@ -33,7 +25,7 @@ import java.util.TimeZone
 
 private fun calculateRecommendedSite(recentLogs: List<InjectionLogEntity>): InjectionSite {
     val allSites = InjectionSite.entries
-    val recentSiteSet = recentLogs.take(4).map { it.site }.toSet()
+    val recentSiteSet = recentLogs.asSequence().take(4).map { (_, _, _, site) -> site }.toSet()
     return allSites.firstOrNull { it !in recentSiteSet } ?: allSites.first()
 }
 
@@ -46,14 +38,14 @@ fun InjectionLogScreen(
     onUpdateInjectionLog: (InjectionLogEntity) -> Unit,
     onDeleteInjectionLog: (InjectionLogEntity) -> Unit,
     onNavigateToSettings: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     var selectedSite by remember { mutableStateOf(InjectionSite.ABDOMEN_LEFT) }
-    var selectedMedicationId by remember { mutableStateOf(medications.firstOrNull()?.id ?: 0L) }
+    var selectedMedicationId by remember { mutableLongStateOf(medications.firstOrNull()?.id ?: 0L) }
 
     // Keep selectedMedicationId valid if medications list updates
     LaunchedEffect(medications) {
-        if (selectedMedicationId == 0L && medications.isNotEmpty()) {
+        if ((selectedMedicationId == 0L) && medications.isNotEmpty()) {
             selectedMedicationId = medications.first().id
         }
     }
@@ -65,12 +57,12 @@ fun InjectionLogScreen(
     var dosageInput by remember { mutableStateOf("") }
     var lotNumberInput by remember { mutableStateOf("") }
     var notesInput by remember { mutableStateOf("") }
-    var painLevelInput by remember { mutableStateOf(1f) }
+    var painLevelInput by remember { mutableFloatStateOf(1f) }
 
-    var selectedTimestamp by remember { mutableStateOf(System.currentTimeMillis()) }
-    var showDatePicker by remember { mutableStateOf(false) }
-    var showTimePicker by remember { mutableStateOf(false) }
-    var tempDateMillis by remember { mutableStateOf(System.currentTimeMillis()) }
+    var selectedTimestamp by remember { mutableLongStateOf(System.currentTimeMillis()) }
+    var showDatePicker by remember { mutableStateOf(value = false) }
+    var showTimePicker by remember { mutableStateOf(value = false) }
+    var tempDateMillis by remember { mutableLongStateOf(System.currentTimeMillis()) }
 
     var logToEdit by remember { mutableStateOf<InjectionLogEntity?>(null) }
 
@@ -79,26 +71,30 @@ fun InjectionLogScreen(
         DatePickerDialog(
             onDismissRequest = { showDatePicker = false },
             confirmButton = {
-                TextButton(onClick = {
-                    datePickerState.selectedDateMillis?.let { millis ->
-                        val utcCal = Calendar.getInstance(TimeZone.getTimeZone("UTC")).apply {
-                            timeInMillis = millis
+                TextButton(
+                    onClick = {
+                        datePickerState.selectedDateMillis?.let { millis ->
+                            val utcCal = Calendar.getInstance(TimeZone.getTimeZone("UTC")).apply {
+                                timeInMillis = millis
+                            }
+                            val localCal = Calendar.getInstance(TimeZone.getDefault()).apply {
+                                timeInMillis = selectedTimestamp
+                                set(Calendar.YEAR, utcCal[Calendar.YEAR])
+                                set(Calendar.MONTH, utcCal[Calendar.MONTH])
+                                set(Calendar.DAY_OF_MONTH, utcCal[Calendar.DAY_OF_MONTH])
+                            }
+                            tempDateMillis = localCal.timeInMillis
                         }
-                        val localCal = Calendar.getInstance(TimeZone.getDefault()).apply {
-                            timeInMillis = selectedTimestamp
-                            set(Calendar.YEAR, utcCal.get(Calendar.YEAR))
-                            set(Calendar.MONTH, utcCal.get(Calendar.MONTH))
-                            set(Calendar.DAY_OF_MONTH, utcCal.get(Calendar.DAY_OF_MONTH))
-                        }
-                        tempDateMillis = localCal.timeInMillis
-                    }
-                    showDatePicker = false
-                    showTimePicker = true
-                }) { Text("Next (Time)") }
+                        showDatePicker = false
+                        showTimePicker = true
+                    },
+                ) { Text("Next (Time)") }
             },
             dismissButton = {
-                TextButton(onClick = { showDatePicker = false }) { Text("Cancel") }
-            }
+                TextButton(
+                    onClick = { showDatePicker = false },
+                ) { Text("Cancel") }
+            },
         ) {
             DatePicker(state = datePickerState)
         }
@@ -107,9 +103,9 @@ fun InjectionLogScreen(
     if (showTimePicker) {
         val cal = Calendar.getInstance(TimeZone.getDefault()).apply { timeInMillis = selectedTimestamp }
         val timePickerState = rememberTimePickerState(
-            initialHour = cal.get(Calendar.HOUR_OF_DAY),
-            initialMinute = cal.get(Calendar.MINUTE),
-            is24Hour = false
+            initialHour = cal[Calendar.HOUR_OF_DAY],
+            initialMinute = cal[Calendar.MINUTE],
+            is24Hour = false,
         )
         AlertDialog(
             onDismissRequest = { showTimePicker = false },
@@ -117,7 +113,7 @@ fun InjectionLogScreen(
             text = {
                 Box(
                     modifier = Modifier.fillMaxWidth(),
-                    contentAlignment = Alignment.Center
+                    contentAlignment = Alignment.Center,
                 ) {
                     TimePicker(state = timePickerState)
                 }
@@ -214,13 +210,13 @@ fun InjectionLogScreen(
                 onNotesChanged = { notesInput = it },
                 selectedSite = selectedSite,
                 onSiteSelected = { selectedSite = it },
-                recentSites = injectionLogs.take(3).map { it.site },
+                recentSites = injectionLogs.asSequence().take(3).map { (_, _, _, site) -> site }.toList(),
                 recommendedSite = recommendedSite,
                 selectedTimestamp = selectedTimestamp,
                 onShowDateTimePicker = { showDatePicker = true },
                 onSave = {
                     if (selectedMedicationId != 0L) {
-                        val med = medications.find { it.id == selectedMedicationId }
+                        val med = medications.find { (id) -> id == selectedMedicationId }
                         onSaveInjectionLog(
                             selectedMedicationId,
                             selectedSite,

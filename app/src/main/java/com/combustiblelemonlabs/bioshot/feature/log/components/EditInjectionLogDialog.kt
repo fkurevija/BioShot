@@ -23,20 +23,20 @@ import java.util.*
 @Composable
 fun EditInjectionLogDialog(
     log: InjectionLogEntity,
-    medications: List<MedicationEntity>,
+    @Suppress("UNUSED_PARAMETER") medications: List<MedicationEntity>,
     onDismiss: () -> Unit,
-    onSave: (InjectionLogEntity) -> Unit
+    onSave: (InjectionLogEntity) -> Unit,
 ) {
     var dosage by remember { mutableStateOf(log.dosageGiven) }
     var lotNumber by remember { mutableStateOf(log.lotNumber ?: "") }
-    var painLevel by remember { mutableStateOf((log.painLevel ?: 1).toFloat()) }
+    var painLevel by remember { mutableFloatStateOf((log.painLevel ?: 1).toFloat()) }
     var notes by remember { mutableStateOf(log.notes ?: "") }
     var selectedSite by remember { mutableStateOf(log.site) }
-    var selectedTimestamp by remember { mutableStateOf(log.timestamp) }
-    var showDatePicker by remember { mutableStateOf(false) }
-    var showTimePicker by remember { mutableStateOf(false) }
-    var tempDateMillis by remember { mutableStateOf(log.timestamp) }
-    var siteExpanded by remember { mutableStateOf(false) }
+    var selectedTimestamp by remember { mutableLongStateOf(log.timestamp) }
+    var showDatePicker by remember { mutableStateOf(value = false) }
+    var showTimePicker by remember { mutableStateOf(value = false) }
+    var tempDateMillis by remember { mutableLongStateOf(log.timestamp) }
+    var siteExpanded by remember { mutableStateOf(value = false) }
 
     val dateFormat = SimpleDateFormat("MMM dd, yyyy - HH:mm", androidx.compose.ui.platform.LocalLocale.current.platformLocale).apply {
         timeZone = TimeZone.getDefault()
@@ -47,22 +47,26 @@ fun EditInjectionLogDialog(
         DatePickerDialog(
             onDismissRequest = { showDatePicker = false },
             confirmButton = {
-                TextButton(onClick = {
-                    datePickerState.selectedDateMillis?.let { millis ->
-                        val utcCal = Calendar.getInstance(TimeZone.getTimeZone("UTC")).apply {
-                            timeInMillis = millis
+                TextButton(
+                    onClick = {
+                        datePickerState.selectedDateMillis?.let { millis ->
+                            val utcCal = Calendar.getInstance(TimeZone.getTimeZone("UTC")).apply {
+                                timeInMillis = millis
+                            }
+                            val localCal = Calendar.getInstance(TimeZone.getDefault()).apply {
+                                timeInMillis = tempDateMillis
+                                set(Calendar.YEAR, utcCal[Calendar.YEAR])
+                                set(Calendar.MONTH, utcCal[Calendar.MONTH])
+                                set(Calendar.DAY_OF_MONTH, utcCal[Calendar.DAY_OF_MONTH])
+                            }
+                            tempDateMillis = localCal.timeInMillis
                         }
-                        val localCal = Calendar.getInstance(TimeZone.getDefault()).apply {
-                            timeInMillis = tempDateMillis
-                            set(Calendar.YEAR, utcCal.get(Calendar.YEAR))
-                            set(Calendar.MONTH, utcCal.get(Calendar.MONTH))
-                            set(Calendar.DAY_OF_MONTH, utcCal.get(Calendar.DAY_OF_MONTH))
-                        }
-                        tempDateMillis = localCal.timeInMillis
-                    }
-                    showDatePicker = false
-                    showTimePicker = true
-                }) { Text("Next (Time)") }
+                        showDatePicker = false
+                        showTimePicker = true
+                    },
+                ) {
+                    Text("Next (Time)")
+                }
             },
             dismissButton = {
                 TextButton(onClick = { showDatePicker = false }) { Text("Cancel") }
@@ -75,8 +79,8 @@ fun EditInjectionLogDialog(
     if (showTimePicker) {
         val cal = Calendar.getInstance(TimeZone.getDefault()).apply { timeInMillis = selectedTimestamp }
         val timePickerState = rememberTimePickerState(
-            initialHour = cal.get(Calendar.HOUR_OF_DAY),
-            initialMinute = cal.get(Calendar.MINUTE),
+            initialHour = cal[Calendar.HOUR_OF_DAY],
+            initialMinute = cal[Calendar.MINUTE],
             is24Hour = false
         )
         AlertDialog(
@@ -176,7 +180,7 @@ fun EditInjectionLogDialog(
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = siteExpanded) },
                         shape = RoundedCornerShape(12.dp),
                         modifier = Modifier
-                            .menuAnchor()
+                            .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable, enabled = true)
                             .fillMaxWidth()
                     )
                     ExposedDropdownMenu(

@@ -18,7 +18,7 @@ object FhirReportExporter {
     fun buildFhirJsonString(
         medications: List<MedicationEntity>,
         injectionLogs: List<InjectionLogEntity>,
-        symptomEntries: List<SymptomEntryEntity>
+        symptomEntries: List<SymptomEntryEntity>,
     ): String {
         val dateFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.US).apply {
             timeZone = TimeZone.getTimeZone("UTC")
@@ -27,71 +27,98 @@ object FhirReportExporter {
         val entries = mutableListOf<JsonObject>()
 
         // Add medications as MedicationStatement resources
-        medications.forEach { med ->
+        medications.forEach { (id, name, dosage, frequency, _, deviceType) ->
             entries.add(
                 buildJsonObject {
                     put("resourceType", "MedicationStatement")
-                    put("id", "med-${med.id}")
+                    put("id", "med-$id")
                     put("status", "active")
-                    put("medicationCodeableConcept", buildJsonObject {
-                        put("text", med.name)
-                    })
-                    put("dosage", buildJsonArray {
-                        add(buildJsonObject {
-                            put("text", "${med.dosage} (${med.frequency.name}, ${med.deviceType.name})")
-                        })
-                    })
-                }
+                    put(
+                        "medicationCodeableConcept",
+                        buildJsonObject {
+                            put("text", name)
+                        },
+                    )
+                    put(
+                        "dosage",
+                        buildJsonArray {
+                            add(
+                                buildJsonObject {
+                                    put("text", "$dosage (${frequency.name}, ${deviceType.name})")
+                                },
+                            )
+                        },
+                    )
+                },
             )
         }
 
         // Add injection logs as MedicationAdministration resources
-        injectionLogs.forEach { log ->
-            val dateStr = dateFormat.format(Date(log.timestamp))
+        injectionLogs.forEach { (id, _, timestamp, site, dosageGiven, lotNumber, _, painLevel) ->
+            val dateStr = dateFormat.format(Date(timestamp))
             entries.add(
                 buildJsonObject {
                     put("resourceType", "MedicationAdministration")
-                    put("id", "inj-${log.id}")
+                    put("id", "inj-$id")
                     put("status", "completed")
                     put("effectiveDateTime", dateStr)
-                    put("dosage", buildJsonObject {
-                        put("text", log.dosageGiven)
-                    })
-                    put("site", buildJsonObject {
-                        put("text", log.site.name)
-                    })
-                    if (!log.lotNumber.isNullOrBlank()) {
-                        put("note", buildJsonArray {
-                            add(buildJsonObject {
-                                put("text", "Lot: ${log.lotNumber}, Pain: ${log.painLevel ?: 0}/10")
-                            })
-                        })
+                    put(
+                        "dosage",
+                        buildJsonObject {
+                            put("text", dosageGiven)
+                        },
+                    )
+                    put(
+                        "site",
+                        buildJsonObject {
+                            put("text", site.name)
+                        },
+                    )
+                    if (!lotNumber.isNullOrBlank()) {
+                        put(
+                            "note",
+                            buildJsonArray {
+                                add(
+                                    buildJsonObject {
+                                        put("text", "Lot: $lotNumber, Pain: ${painLevel ?: 0}/10")
+                                    },
+                                )
+                            },
+                        )
                     }
-                }
+                },
             )
         }
 
         // Add symptom entries as Observation resources
-        symptomEntries.forEach { symptom ->
-            val dateStr = dateFormat.format(Date(symptom.timestamp))
+        symptomEntries.forEach { (id, timestamp, severity, symptomName, notes) ->
+            val dateStr = dateFormat.format(Date(timestamp))
             entries.add(
                 buildJsonObject {
                     put("resourceType", "Observation")
-                    put("id", "symptom-${symptom.id}")
+                    put("id", "symptom-$id")
                     put("status", "final")
-                    put("code", buildJsonObject {
-                        put("text", symptom.symptomName)
-                    })
+                    put(
+                        "code",
+                        buildJsonObject {
+                            put("text", symptomName)
+                        },
+                    )
                     put("effectiveDateTime", dateStr)
-                    put("valueInteger", symptom.severity)
-                    if (!symptom.notes.isNullOrBlank()) {
-                        put("note", buildJsonArray {
-                            add(buildJsonObject {
-                                put("text", symptom.notes)
-                            })
-                        })
+                    put("valueInteger", severity)
+                    if (!notes.isNullOrBlank()) {
+                        put(
+                            "note",
+                            buildJsonArray {
+                                add(
+                                    buildJsonObject {
+                                        put("text", notes)
+                                    },
+                                )
+                            },
+                        )
                     }
-                }
+                },
             )
         }
 
@@ -99,9 +126,12 @@ object FhirReportExporter {
             put("resourceType", "Bundle")
             put("type", "collection")
             put("timestamp", dateFormat.format(Date()))
-            put("entry", buildJsonArray {
-                entries.forEach { add(JsonObject(mapOf("resource" to it))) }
-            })
+            put(
+                "entry",
+                buildJsonArray {
+                    entries.forEach { add(JsonObject(mapOf("resource" to it))) }
+                },
+            )
         }
 
         return jsonFormat.encodeToString(JsonObject.serializer(), fhirBundle)
@@ -111,7 +141,7 @@ object FhirReportExporter {
         context: Context,
         medications: List<MedicationEntity>,
         injectionLogs: List<InjectionLogEntity>,
-        symptomEntries: List<SymptomEntryEntity>
+        symptomEntries: List<SymptomEntryEntity>,
     ): Uri? {
         val jsonString = buildFhirJsonString(medications, injectionLogs, symptomEntries)
         val file = File(context.cacheDir, "BioShot_FHIR_Clinical_Export.json")
@@ -120,7 +150,7 @@ object FhirReportExporter {
         return FileProvider.getUriForFile(
             context,
             "${context.packageName}.fileprovider",
-            file
+            file,
         )
     }
 }

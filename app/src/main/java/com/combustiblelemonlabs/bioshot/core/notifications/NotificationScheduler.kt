@@ -22,7 +22,7 @@ object NotificationScheduler {
         remindersEnabled: Boolean,
         reminders: List<CustomReminder>,
         preferredHour: Int = -1,
-        preferredMinute: Int = -1
+        preferredMinute: Int = -1,
     ) {
         cancelReminders(context)
 
@@ -31,7 +31,7 @@ object NotificationScheduler {
         reminders.forEachIndexed { index, reminder ->
             val targetCalendar = Calendar.getInstance(TimeZone.getDefault()).apply {
                 timeInMillis = nextDoseTimeMs - reminder.offsetMs
-                if ((reminder.unit == ReminderUnit.DAYS || reminder.unit == ReminderUnit.WEEKS) && preferredHour >= 0 && preferredMinute >= 0) {
+                if (((reminder.unit == ReminderUnit.DAYS) || (reminder.unit == ReminderUnit.WEEKS)) && (preferredHour >= 0) && (preferredMinute >= 0)) {
                     set(Calendar.HOUR_OF_DAY, preferredHour)
                     set(Calendar.MINUTE, preferredMinute)
                     set(Calendar.SECOND, 0)
@@ -57,40 +57,15 @@ object NotificationScheduler {
                 WorkManager.getInstance(context).enqueueUniqueWork(
                     uniqueName,
                     ExistingWorkPolicy.REPLACE,
-                    workRequest
+                    workRequest,
                 )
             }
         }
-    }
-
-    /** Legacy single reminder adapter for backwards compatibility. */
-    fun scheduleReminder(
-        context: Context,
-        nextDoseTimeMs: Long,
-        medicationName: String,
-        dosage: String,
-        preferredHour: Int = -1,
-        preferredMinute: Int = -1
-    ) {
-        scheduleReminders(
-            context = context,
-            nextDoseTimeMs = nextDoseTimeMs,
-            medicationName = medicationName,
-            dosage = dosage,
-            remindersEnabled = true,
-            reminders = CustomReminder.DEFAULT_REMINDERS,
-            preferredHour = preferredHour,
-            preferredMinute = preferredMinute
-        )
     }
 
     fun cancelReminders(context: Context) {
         val workManager = WorkManager.getInstance(context)
         workManager.cancelUniqueWork(LEGACY_WORK_NAME)
         workManager.cancelAllWorkByTag(WORK_PREFIX)
-    }
-
-    fun cancelReminder(context: Context) {
-        cancelReminders(context)
     }
 }

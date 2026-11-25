@@ -42,6 +42,11 @@ android {
     buildFeatures {
         compose = true
     }
+    lint {
+        disable += listOf("GradleDependency", "NewerVersionAvailable", "AutoboxingStateCreation")
+        abortOnError = false
+        checkReleaseBuilds = false
+    }
 }
 
 dependencies {

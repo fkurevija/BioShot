@@ -1,11 +1,10 @@
 package com.combustiblelemonlabs.bioshot.feature.symptom
 
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.EventNote
 import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -13,7 +12,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.combustiblelemonlabs.bioshot.core.database.InjectionLogEntity
 import com.combustiblelemonlabs.bioshot.core.database.MedicationEntity
@@ -38,7 +36,7 @@ fun SymptomDiaryScreen(
     modifier: Modifier = Modifier
 ) {
     var symptomName by remember { mutableStateOf("") }
-    var severity by remember { mutableStateOf(3f) }
+    var severity by remember { mutableFloatStateOf(3f) }
     var notes by remember { mutableStateOf("") }
     var selectedTag by remember { mutableStateOf("Joint Pain") }
 
@@ -127,7 +125,7 @@ fun SymptomDiaryScreen(
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         Icon(
-                            imageVector = Icons.Rounded.EventNote,
+                            imageVector = Icons.AutoMirrored.Rounded.EventNote,
                             contentDescription = null,
                             modifier = Modifier.size(48.dp),
                             tint = MaterialTheme.colorScheme.onSurfaceVariant
@@ -157,16 +155,16 @@ fun SymptomDiaryScreen(
                         )
                     }
 
-                    injectionLogs.forEach { log ->
-                        val medicationName = medications.firstOrNull { it.id == log.medicationId }?.name ?: "Unknown"
+                    injectionLogs.forEach { (id, medicationId, timestamp, site, _, _, _, _, _) ->
+                        val medicationName = medications.firstOrNull { it.id == medicationId }?.name ?: "Unknown"
                         TimelineCard(
                             item = TimelineItem(
-                                timestamp = log.timestamp,
+                                timestamp = timestamp,
                                 type = TimelineType.INJECTION,
                                 title = medicationName,
-                                details = "Site: ${log.site.name}",
-                                id = log.id
-                            )
+                                details = "Site: ${site.name}",
+                                id = id,
+                            ),
                         )
                     }
                 }

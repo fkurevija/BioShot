@@ -7,6 +7,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -25,10 +26,10 @@ import com.combustiblelemonlabs.bioshot.ui.theme.BioShotTheme
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MedicationSetupWizardScreen(
-    initialMedication: MedicationEntity? = null,
     onSaveMedication: (String, String, ScheduleType, Int, DeviceType, String?) -> Unit,
     onNavigateBack: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    initialMedication: MedicationEntity? = null,
 ) {
     var name by remember { mutableStateOf(initialMedication?.name ?: "") }
     var dosage by remember { mutableStateOf(initialMedication?.dosage ?: "") }
@@ -44,8 +45,8 @@ fun MedicationSetupWizardScreen(
     var customNumberText by remember { 
         mutableStateOf(
             if (initialMedication?.frequency == ScheduleType.CUSTOM) {
-                if (initialDays % 30 == 0) (initialDays / 30).toString()
-                else if (initialDays % 7 == 0) (initialDays / 7).toString()
+                if ((initialDays % 30) == 0) (initialDays / 30).toString()
+                else if ((initialDays % 7) == 0) (initialDays / 7).toString()
                 else initialDays.toString()
             } else {
                 "4"
@@ -54,19 +55,19 @@ fun MedicationSetupWizardScreen(
     }
     var customUnit by remember {
         mutableStateOf(
-            if (initialDays % 30 == 0) CustomUnit.MONTHS
-            else if (initialDays % 7 == 0) CustomUnit.WEEKS
+            if ((initialDays % 30) == 0) CustomUnit.MONTHS
+            else if ((initialDays % 7) == 0) CustomUnit.WEEKS
             else CustomUnit.DAYS
         )
     }
     var deviceType by remember { mutableStateOf(initialMedication?.deviceType ?: DeviceType.PEN) }
     var notes by remember { mutableStateOf(initialMedication?.notes ?: "") }
-    var hasLoadingDose by remember { mutableStateOf(false) }
+    var hasLoadingDose by remember { mutableStateOf(value = false) }
     var loadingDoseOption by remember { mutableStateOf("Weeks 0, 2, 4 (Standard Biologic Induction)") }
 
-    var freqExpanded by remember { mutableStateOf(false) }
-    var unitExpanded by remember { mutableStateOf(false) }
-    var deviceExpanded by remember { mutableStateOf(false) }
+    var freqExpanded by remember { mutableStateOf(value = false) }
+    var unitExpanded by remember { mutableStateOf(value = false) }
+    var deviceExpanded by remember { mutableStateOf(value = false) }
 
     val isFormValid = name.isNotBlank() && dosage.isNotBlank()
 
@@ -96,24 +97,24 @@ fun MedicationSetupWizardScreen(
         }
     }
 
-    val applyPresetAction: (BiologicPreset) -> Unit = { preset ->
-        name = preset.name
-        if (dosage.isBlank()) dosage = preset.defaultDosage
-        selectedPreset = when (preset.scheduleType) {
+    val applyPresetAction: (BiologicPreset) -> Unit = { (presetName, defaultDosage, scheduleType, defaultDays) ->
+        name = presetName
+        if (dosage.isBlank()) dosage = defaultDosage
+        selectedPreset = when (scheduleType) {
             ScheduleType.DAILY -> FrequencyPreset.DAILY
             ScheduleType.WEEKLY -> FrequencyPreset.WEEKLY
             ScheduleType.BIWEEKLY -> FrequencyPreset.BIWEEKLY
             ScheduleType.MONTHLY -> FrequencyPreset.MONTHLY
             ScheduleType.AS_NEEDED -> FrequencyPreset.AS_NEEDED
             ScheduleType.CUSTOM -> {
-                if (preset.defaultDays % 30 == 0) {
-                    customNumberText = (preset.defaultDays / 30).toString()
+                if ((defaultDays % 30) == 0) {
+                    customNumberText = (defaultDays / 30).toString()
                     customUnit = CustomUnit.MONTHS
-                } else if (preset.defaultDays % 7 == 0) {
-                    customNumberText = (preset.defaultDays / 7).toString()
+                } else if ((defaultDays % 7) == 0) {
+                    customNumberText = (defaultDays / 7).toString()
                     customUnit = CustomUnit.WEEKS
                 } else {
-                    customNumberText = preset.defaultDays.toString()
+                    customNumberText = defaultDays.toString()
                     customUnit = CustomUnit.DAYS
                 }
                 FrequencyPreset.CUSTOM
@@ -128,7 +129,7 @@ fun MedicationSetupWizardScreen(
                 title = { Text(if (initialMedication != null) "Edit Therapy" else "Add Biologics or GLP-1") },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(imageVector = Icons.Rounded.ArrowBack, contentDescription = "Back")
+                        Icon(imageVector = Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back")
                     }
                 },
                 actions = {
@@ -243,7 +244,7 @@ fun MedicationSetupWizardScreen(
                     trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = freqExpanded) },
                     shape = RoundedCornerShape(12.dp),
                     modifier = Modifier
-                        .menuAnchor()
+                        .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable, enabled = true)
                         .fillMaxWidth()
                 )
                 ExposedDropdownMenu(
@@ -289,7 +290,7 @@ fun MedicationSetupWizardScreen(
                             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = unitExpanded) },
                             shape = RoundedCornerShape(12.dp),
                             modifier = Modifier
-                                .menuAnchor()
+                                .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable, enabled = true)
                                 .fillMaxWidth()
                         )
                         ExposedDropdownMenu(
@@ -323,7 +324,7 @@ fun MedicationSetupWizardScreen(
                     trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = deviceExpanded) },
                     shape = RoundedCornerShape(12.dp),
                     modifier = Modifier
-                        .menuAnchor()
+                        .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable, enabled = true)
                         .fillMaxWidth()
                 )
                 ExposedDropdownMenu(

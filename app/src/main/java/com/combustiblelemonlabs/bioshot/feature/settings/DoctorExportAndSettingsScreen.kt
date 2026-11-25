@@ -48,6 +48,7 @@ fun DoctorExportAndSettingsScreen(
     medications: List<MedicationEntity>,
     injectionLogs: List<InjectionLogEntity>,
     symptomEntries: List<SymptomEntryEntity>,
+    modifier: Modifier = Modifier,
     forceDark: Boolean = false,
     remindersEnabled: Boolean = false,
     customReminders: List<CustomReminder> = CustomReminder.DEFAULT_REMINDERS,
@@ -60,19 +61,18 @@ fun DoctorExportAndSettingsScreen(
     onReminderTimeChanged: (Int, Int) -> Unit = { _, _ -> },
     onCheckDatabaseErrors: () -> Unit = {},
     onResetDatabase: () -> Unit = {},
-    modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
 
     var pendingBackupFile by remember { mutableStateOf<File?>(null) }
-    var showExportDialog by remember { mutableStateOf(false) }
-    var showImportDialog by remember { mutableStateOf(false) }
+    var showExportDialog by remember { mutableStateOf(value = false) }
+    var showImportDialog by remember { mutableStateOf(value = false) }
 
     val saveFileLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.CreateDocument("application/json")
+        contract = ActivityResultContracts.CreateDocument("application/json"),
     ) { uri ->
-        if (uri != null && pendingBackupFile != null) {
+        if ((uri != null) && (pendingBackupFile != null)) {
             try {
                 context.contentResolver.openOutputStream(uri)?.use { outputStream ->
                     pendingBackupFile?.inputStream()?.use { inputStream ->
@@ -168,7 +168,7 @@ fun DoctorExportAndSettingsScreen(
         )
     }
 
-    if (showExportDialog && pendingBackupFile != null) {
+    if ((showExportDialog) && (pendingBackupFile != null)) {
         AlertDialog(
             onDismissRequest = {
                 showExportDialog = false
@@ -273,7 +273,7 @@ fun DoctorExportAndSettingsScreen(
                     ) {
                         val med = medications.firstOrNull()
                         val log = injectionLogs.firstOrNull()
-                        if (med != null && enabled && remindersList.isNotEmpty()) {
+                        if ((med != null) && enabled && (remindersList.isNotEmpty())) {
                             val lastTime = log?.timestamp ?: med.createdAt
                             val nextDose = ScheduleEngine.calculateNextInjection(
                                 lastInjectionDate = lastTime,
@@ -285,7 +285,7 @@ fun DoctorExportAndSettingsScreen(
                                 nextDoseTimeMs = nextDose,
                                 medicationName = med.name,
                                 dosage = med.dosage,
-                                remindersEnabled = enabled,
+                                remindersEnabled = true,
                                 reminders = remindersList,
                                 preferredHour = newHour,
                                 preferredMinute = newMinute
@@ -295,7 +295,7 @@ fun DoctorExportAndSettingsScreen(
                         }
                     }
 
-                    var showAddReminderDialog by remember { mutableStateOf(false) }
+                    var showAddReminderDialog by remember { mutableStateOf(value = false) }
 
                     // 1. Injection Reminders (Google Calendar Style)
                     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -319,7 +319,7 @@ fun DoctorExportAndSettingsScreen(
                                         style = MaterialTheme.typography.titleMedium,
                                         fontWeight = FontWeight.Bold
                                     )
-                                    val timeText = if (reminderHour >= 0 && reminderMinute >= 0) {
+                                    val timeText = if ((reminderHour >= 0) && (reminderMinute >= 0)) {
                                         String.format(
                                             androidx.compose.ui.platform.LocalLocale.current.platformLocale,
                                             "Preferred daily time: %02d:%02d",
@@ -388,7 +388,7 @@ fun DoctorExportAndSettingsScreen(
                                                 }
                                                 IconButton(
                                                     onClick = {
-                                                        val updatedList = customReminders.filter { it.id != reminder.id }
+                                                        val updatedList = customReminders.filter { (id) -> id != reminder.id }
                                                         onCustomRemindersChanged(updatedList)
                                                         triggerReschedule(remindersEnabled, updatedList)
                                                     }
@@ -414,7 +414,7 @@ fun DoctorExportAndSettingsScreen(
                                 }
                             }
 
-                            var showTimePicker by remember { mutableStateOf(false) }
+                            var showTimePicker by remember { mutableStateOf(value = false) }
                             if (showTimePicker) {
                                 val timePickerState = rememberTimePickerState(
                                     initialHour = if (reminderHour >= 0) reminderHour else 9,
@@ -533,7 +533,7 @@ fun DoctorExportAndSettingsScreen(
                                             singleLine = true
                                         )
 
-                                        var unitExpanded by remember { mutableStateOf(false) }
+                                        var unitExpanded by remember { mutableStateOf(value = false) }
                                         ExposedDropdownMenuBox(
                                             expanded = unitExpanded,
                                             onExpandedChange = { unitExpanded = !unitExpanded },
@@ -545,7 +545,7 @@ fun DoctorExportAndSettingsScreen(
                                                 readOnly = true,
                                                 label = { Text("Unit") },
                                                 trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = unitExpanded) },
-                                                modifier = Modifier.menuAnchor()
+                                                modifier = Modifier.menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable, enabled = true)
                                             )
                                             ExposedDropdownMenu(
                                                 expanded = unitExpanded,
@@ -611,7 +611,7 @@ fun DoctorExportAndSettingsScreen(
                     HorizontalDivider()
 
                     // 3. Database Errors Check / Reset
-                    var hasChecked by remember { mutableStateOf(false) }
+                    var hasChecked by remember { mutableStateOf(value = false) }
 
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -619,7 +619,7 @@ fun DoctorExportAndSettingsScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Row(
-                            modifier = if (hasChecked && migrationError == null) {
+                            modifier = if ((hasChecked) && (migrationError == null)) {
                                 Modifier.weight(1f)
                             } else {
                                 Modifier
@@ -669,8 +669,7 @@ fun DoctorExportAndSettingsScreen(
                                             fontWeight = FontWeight.Bold
                                         )
                                         Text(
-                                            text = migrationError
-                                                ?: "Database migration failed. Tap Reset to erase all data.",
+                                            text = migrationError,
                                             style = MaterialTheme.typography.bodySmall,
                                             color = MaterialTheme.colorScheme.onSurfaceVariant
                                         )
@@ -697,7 +696,7 @@ fun DoctorExportAndSettingsScreen(
                                 }
                             }
                         }
-                        if (hasChecked && migrationError != null) {
+                        if ((hasChecked) && (migrationError != null)) {
                             Button(
                                 onClick = { onResetDatabase() },
                                 colors = ButtonDefaults.buttonColors(

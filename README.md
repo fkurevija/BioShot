@@ -104,6 +104,12 @@ BioShot features a robust unit test suite covering PK math, scheduling engines, 
 
 ---
 
+## 🤖 AI Disclosure
+
+Portions of this codebase, documentation, or tests were generated or refactored with the assistance of AI tools (e.g. GitHub Copilot, Claude, ChatGPT). All AI-generated outputs have been reviewed, tested, and verified by human maintainers.
+
+---
+
 ## 📄 License
 
 Distributed under the **MIT License**. See [LICENSE](LICENSE) for more information.
